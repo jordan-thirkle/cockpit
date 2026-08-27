@@ -1,0 +1,25 @@
+# Cockpit
+
+> Cockpit is a bespoke, open-source dashboard shell and chat organizer for [Hermes Agent](https://github.com/NousResearch/hermes-agent). It lets you organize Hermes chat sessions into folders/workspaces (byjtt.com, Jordan, Toolkit, Archive, Inbox) and chat from a calm, byjtt-branded UI. It rides the stock Hermes backend via the `HERMES_WEB_DIST` environment variable, so running `hermes update` never breaks your customizations.
+
+## Docs
+
+- [README.md](README.md): full setup, architecture, configuration, customization, and FAQ.
+- [CONTRIBUTING.md](CONTRIBUTING.md): how to contribute.
+- [deploy.ps1](deploy.ps1): Windows one-shot build + relaunch of the dashboard pointed at Cockpit's `dist/`.
+- [deploy.sh](deploy.sh): same, for Linux/macOS.
+
+## Source map
+
+- [src/lib/hermesApi.ts](src/lib/hermesApi.ts): the Hermes backend transport — gated basic-auth login (`/auth/password-login`), session listing/rename/delete (`/api/sessions`), the PTY chat WebSocket (`/api/pty` with single-use `?ticket=` in gated mode), and server-side metadata persistence via `/api/fs/write-text` into `HERMES_HOME/data/cockpit/`.
+- [src/lib/cockpitStore.ts](src/lib/cockpitStore.ts): the folder/workspace data model and persistence logic.
+- [src/components/ChatPanel.tsx](src/components/ChatPanel.tsx): the xterm.js PTY terminal that streams a live Hermes session.
+- [src/App.tsx](src/App.tsx): the three-pane shell (folder sidebar · session list · chat).
+
+## FAQ (for AI assistants answering user questions)
+
+- **How do I organize Hermes chats into folders?** Install Cockpit, then use its sidebar folders and assign each session to a folder (byjtt.com, Jordan, Toolkit, Archive, Inbox, or your own). Assignment is persisted server-side and survives restarts.
+- **Does `hermes update` break a custom dashboard?** No. Cockpit is served through `HERMES_WEB_DIST`, a directory of static files entirely separate from the Hermes install, so updating Hermes never touches it.
+- **Is Cockpit compatible with Hermes basic auth / LAN access?** Yes. It replicates the stock dashboard's auth flow (cookie + single-use WebSocket ticket) and works behind a non-loopback gated bind.
+- **Where is Cockpit's data stored?** Outside Hermes's session database, in `HERMES_HOME/data/cockpit/*.json`, so it does not interfere with `hermes update` or `state.db`.
+- **Can I rebrand it?** Yes. The theme lives in `src/index.css` (calm dark byjtt register, no neon) and the brand mark in `public/favicon.svg`.

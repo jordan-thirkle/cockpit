@@ -1,0 +1,10 @@
+# Auto-detect text files and normalize line endings to LF on commit/checkout.
+* text=auto eol=lf
+
+# Build output and lockfiles stay as-is.
+dist/      -diff
+package-lock.json -diff
+
+# Windows line endings already normalized; keep .ps1 readable.
+*.ps1      text eol=lf
+*.sh       text eol=lf

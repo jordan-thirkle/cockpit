@@ -1,0 +1,204 @@
+// Cockpit → Hermes backend transport.
+// Faithfully re-implements the stock dashboard client contract so it works
+// against an unmodified `hermes dashboard` backend:
+//   - reads window.__HERMES_AUTH_REQUIRED__ / __HERMES_SESSION_TOKEN__
+//     injected into index.html by web_server._serve_index
+//   - gated mode (basic auth on non-loopback) → POST /auth/password-login,
+//     stores hermes_session_at cookie (browser does this automatically),
+//     and mints single-use ?ticket= for WS via /api/auth/ws-ticket
+//   - loopback mode → uses injected X-Hermes-Session-Token header
+// Nothing here patches Hermes. See hermes_cli/web_server.py / dashboard_auth/*.
+
+export const HERMES_BASE_PATH = (() => {
+  const raw = (window as any).__HERMES_BASE_PATH__ ?? "";
+  if (!raw) return "";
+  const withLead = raw.startsWith("/") ? raw : `/${raw}`;
+  return withLead.replace(/\/+$/, "");
+})();
+const BASE = HERMES_BASE_PATH;
+
+const SESSION_HEADER = "X-Hermes-Session-Token";
+
+export function isAuthRequired(): boolean {
+  return Boolean((window as any).__HERMES_AUTH_REQUIRED__);
+}
+
+export interface SessionInfo {
+  id: string;
+  title: string | null;
+  source: string;
+  model: string | null;
+  created_at: string | null;
+  updated_at: string | null;
+  message_count: number;
+  tool_call_count: number;
+  ended_at: string | null;
+  archived?: boolean | null;
+  [k: string]: unknown;
+}
+
+export interface PaginatedSessions {
+  sessions: SessionInfo[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> {
+  const headers = new Headers(init?.headers);
+  const token = (window as any).__HERMES_SESSION_TOKEN__;
+  if (token && !isAuthRequired()) headers.set(SESSION_HEADER, token);
+  const res = await fetch(`${BASE}${url}`, {
+    ...init,
+    headers,
+    credentials: "include",
+  });
+  if (!res.ok) {
+    if (res.status === 401) throw new CockpitAuthError(await safeText(res));
+    throw new Error(`${res.status}: ${await safeText(res)}`);
+  }
+  return res.json() as Promise<T>;
+}
+
+async function safeText(res: Response): Promise<string> {
+  try {
+    return (await res.text()).slice(0, 300);
+  } catch {
+    return res.statusText;
+  }
+}
+
+export class CockpitAuthError extends Error {}
+
+// ── Auth ────────────────────────────────────────────────────────────────
+export async function login(
+  username: string,
+  password: string,
+): Promise<{ ok: boolean; next?: string }> {
+  const res = await fetch(`${BASE}/auth/password-login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ provider: "basic", username, password, next: "/" }),
+  });
+  if (!res.ok) {
+    let msg = res.status === 401 ? "Invalid username or password." : "Sign-in failed.";
+    try {
+      const j = await res.json();
+      if (j?.detail) msg = j.detail;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(msg);
+  }
+  return res.json();
+}
+
+export async function logout(): Promise<void> {
+  await fetch(`${BASE}/auth/logout`, { method: "POST", credentials: "include" });
+  window.location.assign("/login");
+}
+
+export async function getAuthMe(): Promise<{ user_id?: string } | null> {
+  if (!isAuthRequired()) return { user_id: "local" };
+  try {
+    return await fetchJSON<{ user_id?: string }>("/api/auth/me", {
+      // allowUnauthorized: a 401 here just means not logged in
+    } as RequestInit);
+  } catch {
+    return null;
+  }
+}
+
+// ── Sessions ────────────────────────────────────────────────────────────
+export function getSessions(
+  limit = 200,
+  offset = 0,
+  order: "created" | "recent" = "recent",
+): Promise<PaginatedSessions> {
+  return fetchJSON<PaginatedSessions>(
+    `/api/sessions?limit=${limit}&offset=${offset}&order=${order}`,
+  );
+}
+
+export function renameSession(id: string, title: string): Promise<{ ok: boolean }> {
+  return fetchJSON(`/api/sessions/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ title }),
+  });
+}
+
+export function deleteSession(id: string): Promise<{ ok: boolean }> {
+  return fetchJSON(`/api/sessions/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+// ── PTY / Chat WebSocket ────────────────────────────────────────────────
+async function buildWsAuthParam(): Promise<[string, string]> {
+  if (isAuthRequired()) {
+    const { ticket } = await fetchJSON<{ ticket: string; ttl_seconds: number }>(
+      "/api/auth/ws-ticket",
+      { method: "POST" } as RequestInit,
+    );
+    return ["ticket", ticket];
+  }
+  return ["token", (window as any).__HERMES_SESSION_TOKEN__ ?? ""];
+}
+
+export async function buildPtyWsUrl(
+  channel: string,
+  opts: { resume?: string | null; profile?: string | null } = {},
+): Promise<string> {
+  const [name, value] = await buildWsAuthParam();
+  const qs = new URLSearchParams();
+  qs.set("channel", channel);
+  if (opts.resume) qs.set("resume", opts.resume);
+  qs.set(name, value);
+  const proto = location.protocol === "https:" ? "wss:" : "ws:";
+  return `${proto}//${location.host}${BASE}/api/pty?${qs.toString()}`;
+}
+
+// Opaque per-tab channel id (server uses it to multiplex PTY sockets).
+export function generateChannelId(seed = ""): string {
+  const rnd = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+  return `cockpit-${seed ? seed + "-" : ""}${rnd}`;
+}
+
+// ── Cockpit metadata persistence (server-side, outside Hermes state.db) ──
+// We use the dashboard's managed-files API rooted at HERMES_HOME/data.
+// Path: /data/cockpit/<file>.json — survives `hermes update` because it lives
+// in HERMES_HOME, not inside the git-cloned hermes-agent tree.
+const COCKPIT_DIR = "data/cockpit";
+
+export async function readJsonFile<T>(name: string, fallback: T): Promise<T> {
+  try {
+    const r = await fetchJSON<{ text: string }>(
+      `/api/fs/read-text?path=${encodeURIComponent(`${COCKPIT_DIR}/${name}.json`)}`,
+    );
+    return JSON.parse(r.text) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+export async function writeJsonFile(name: string, data: unknown): Promise<void> {
+  // Use the fs write-text endpoint (managed, HERMES_HOME rooted).
+  const res = await fetch(`${BASE}/api/fs/write-text`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({
+      path: `${COCKPIT_DIR}/${name}.json`,
+      text: JSON.stringify(data, null, 2),
+      create_missing_parents: true,
+    }),
+  });
+  if (!res.ok) {
+    // Fallback to localStorage if the API is unavailable (e.g. headless).
+    try {
+      localStorage.setItem(`cockpit:${name}`, JSON.stringify(data));
+    } catch {
+      /* ignore */
+    }
+  }
+}
