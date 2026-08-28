@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { cockpitStore, type CockpitFolder } from "@/lib/cockpitStore";
+import { ThemePicker } from "@/themes";
 
 export function Sidebar({
   activeFolder,
@@ -33,6 +34,9 @@ export function Sidebar({
             <div className="brand-sub">byjtt.com · Hermes</div>
           </div>
         </div>
+        <div className="brand-head-right">
+          <ThemePicker />
+        </div>
       </div>
 
       <div className="sidebar-scroll">
@@ -63,10 +67,10 @@ export function Sidebar({
               }}
               style={{
                 flex: 1,
-                background: "var(--canvas)",
+                background: "var(--paper)",
                 border: "1px solid var(--line)",
                 borderRadius: 6,
-                color: "var(--text)",
+                color: "var(--ink)",
                 padding: "4px 8px",
                 fontSize: 13,
               }}
@@ -76,7 +80,7 @@ export function Sidebar({
           <div
             className="folder"
             onClick={() => setCreating(true)}
-            style={{ color: "var(--text-faint)" }}
+            style={{ color: "var(--muted)" }}
           >
             <span className="folder-icon">＋</span>
             <span className="folder-name">New folder</span>

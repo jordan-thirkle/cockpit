@@ -58,9 +58,9 @@ export function WorkspacePanel({
 }
 
 const inputStyle: React.CSSProperties = {
-  background: "var(--canvas)",
+  background: "var(--paper)",
   border: "1px solid var(--line)",
-  color: "var(--text)",
+  color: "var(--ink)",
   borderRadius: 6,
   padding: "6px 9px",
   fontSize: 12,

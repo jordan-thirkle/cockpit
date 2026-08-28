@@ -55,7 +55,7 @@ export function SessionList({
 
       <div className="session-list">
         {sessions.length === 0 && (
-          <div style={{ color: "var(--text-faint)", padding: "16px 10px", fontSize: 13 }}>
+          <div style={{ color: "var(--muted)", padding: "16px 10px", fontSize: 13 }}>
             No sessions here yet.
           </div>
         )}

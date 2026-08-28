@@ -11,6 +11,7 @@ import { Sidebar } from "./components/Sidebar";
 import { SessionList } from "./components/SessionList";
 import { ChatPanel } from "./components/ChatPanel";
 import { WorkspacePanel } from "./components/WorkspacePanel";
+import { ThemeProvider } from "@/themes";
 
 export function App() {
   const [authed, setAuthed] = useState<boolean | null>(null);
@@ -68,6 +69,7 @@ export function App() {
   const folder = cockpitStore.getFolder(activeFolder);
 
   return (
+    <ThemeProvider>
     <div className={`app${activeSession ? " with-chat" : ""}`}>
       <Sidebar
         activeFolder={activeFolder}
@@ -113,5 +115,6 @@ export function App() {
 
       {activeSession && <ChatPanel session={activeSession} />}
     </div>
+    </ThemeProvider>
   );
 }
