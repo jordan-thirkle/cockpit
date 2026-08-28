@@ -4,9 +4,16 @@ import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import "@xterm/xterm/css/xterm.css";
 import { buildPtyWsUrl, generateChannelId, type SessionInfo } from "@/lib/hermesApi";
+import { type CockpitRepo } from "@/lib/cockpitStore";
 import { TraceView } from "./TraceView";
 
-export function ChatPanel({ session }: { session: SessionInfo | null }) {
+export function ChatPanel({
+  session,
+  repo,
+}: {
+  session?: SessionInfo | null;
+  repo?: CockpitRepo | null;
+}) {
   const hostRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
@@ -86,29 +93,76 @@ export function ChatPanel({ session }: { session: SessionInfo | null }) {
       wsRef.current?.close();
       term.dispose();
     };
-  }, [session?.id]);
+  }, [session?.id, repo?.id]);
+
+  const title = repo ? `${repo.owner}/${repo.name}` : session?.title ?? "New chat";
+  const meta = repo
+    ? `GitHub · ${repo.branch}`
+    : session?.model ?? session?.source ?? "";
+
+  const openOnGitHub = () => {
+    if (repo) window.open(`https://github.com/${repo.owner}/${repo.name}`, "_blank");
+  };
 
   return (
     <section className="chat-pane">
       <div className="chat-head">
-        <h2>{session?.title ?? "New chat"}</h2>
-        <span className="meta">{session?.model ?? session?.source ?? ""}</span>
+        <h2>{title}</h2>
+        <span className="meta">{meta}</span>
         <div className="chat-toolbar">
-          <button
-            className={tab === "terminal" ? "btn-ghost active" : "btn-ghost"}
-            onClick={() => setTab("terminal")}
-          >
-            Terminal
-          </button>
-          <button
-            className={tab === "trace" ? "btn-ghost active" : "btn-ghost"}
-            onClick={() => setTab("trace")}
-          >
-            Trace
-          </button>
+          {repo ? (
+            <>
+              <button className="btn-ghost" onClick={openOnGitHub} title="Open on GitHub">
+                GitHub
+              </button>
+              <button
+                className="btn-ghost"
+                onClick={() =>
+                  window.open(
+                    `https://github.com/${repo.owner}/${repo.name}/pulls`,
+                    "_blank",
+                  )
+                }
+                title="Open a pull request (clone → edit → PR, never main)"
+              >
+                New PR
+              </button>
+            </>
+          ) : (
+            <>
+              <button
+                className={tab === "terminal" ? "btn-ghost active" : "btn-ghost"}
+                onClick={() => setTab("terminal")}
+              >
+                Terminal
+              </button>
+              <button
+                className={tab === "trace" ? "btn-ghost active" : "btn-ghost"}
+                onClick={() => setTab("trace")}
+              >
+                Trace
+              </button>
+            </>
+          )}
         </div>
       </div>
-      {tab === "terminal" ? (
+
+      {repo && (
+        <div className="repo-banner">
+          <span className="repo-banner-icon">{repo.icon ?? "❖"}</span>
+          <span>
+            Working on <strong>{repo.owner}/{repo.name}</strong> · branch{" "}
+            <code>{repo.branch}</code>
+          </span>
+          <span className="repo-banner-hint">
+            {repo.clonePath
+              ? `cloned at ${repo.clonePath}`
+              : "agent clones on demand · PRs via github skills"}
+          </span>
+        </div>
+      )}
+
+      {tab === "terminal" || repo ? (
         <div className="term-wrap" ref={wrapRef}>
           <div className="terminal" ref={hostRef} />
         </div>

@@ -6,6 +6,7 @@ import {
   type SessionInfo,
 } from "@/lib/hermesApi";
 import { cockpitStore } from "@/lib/cockpitStore";
+import { repoStore, type CockpitRepo } from "@/lib/cockpitStore";
 import { Login } from "./components/Login";
 import { Sidebar } from "./components/Sidebar";
 import { SessionList } from "./components/SessionList";
@@ -19,6 +20,7 @@ export function App() {
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [activeFolder, setActiveFolder] = useState<string>("inbox");
   const [activeSession, setActiveSession] = useState<SessionInfo | null>(null);
+  const [activeRepo, setActiveRepo] = useState<CockpitRepo | null>(null);
   const [query, setQuery] = useState("");
 
   // ── auth gate ──────────────────────────────────────────────────────────
@@ -37,6 +39,7 @@ export function App() {
     if (authed !== true) return;
     (async () => {
       await cockpitStore.load();
+      await repoStore.load();
       const data = await getSessions(500, 0, "recent");
       setSessions(data.sessions);
     })();
@@ -75,6 +78,10 @@ export function App() {
       <Sidebar
         activeFolder={activeFolder}
         onSelect={setActiveFolder}
+        onOpenRepo={(r) => {
+          setActiveRepo(r);
+          setActiveSession(null);
+        }}
         sessionCount={(fid) =>
           fid === "inbox"
             ? sessions.filter((s) => cockpitStore.isUnassigned(s.id)).length
@@ -118,6 +125,7 @@ export function App() {
       </div>
 
       {activeSession && <ChatPanel session={activeSession} />}
+      {activeRepo && <ChatPanel repo={activeRepo} />}
     </div>
     </ThemeProvider>
   );

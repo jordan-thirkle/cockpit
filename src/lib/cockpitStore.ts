@@ -22,6 +22,27 @@ export interface CockpitFolder {
   system?: boolean;
 }
 
+// ── Repositories (GitHub-linked) ──────────────────────────────────────
+// A repo is a launch surface: clicking it opens a repo-scoped chat so the
+// agent works on that GitHub repo (clone → edit → PR) instead of local files.
+// Cockpit never stores GitHub tokens — auth is delegated to Hermes's own
+// `gh`/GITHUB_TOKEN path (see ROADMAP.md).
+export interface CockpitRepo {
+  id: string; // "r-<owner>-<name>"
+  owner: string;
+  name: string;
+  branch: string; // default branch
+  clonePath?: string; // optional local clone; absent = clone on demand
+  icon?: string;
+  order: number;
+}
+
+export interface GithubState {
+  linked: boolean;
+  user?: string;
+  repos: CockpitRepo[];
+}
+
 const DEFAULT_FOLDERS: CockpitFolder[] = [
   {
     id: "byjtt",
@@ -165,5 +186,88 @@ export class CockpitStore {
     return this.loaded;
   }
 }
+
+const REPO_KEY = "repos";
+const DEFAULT_GITHUB: GithubState = { linked: false, repos: [] };
+
+export class RepoStore {
+  private state: GithubState = structuredClone(DEFAULT_GITHUB);
+  private loaded = false;
+
+  async load(): Promise<void> {
+    this.state = await import("@/lib/hermesApi").then((m) =>
+      m.readJsonFile<GithubState>(REPO_KEY, DEFAULT_GITHUB),
+    );
+    if (!this.state.repos) this.state.repos = [];
+    if (this.state.linked === undefined) this.state.linked = false;
+    this.loaded = true;
+  }
+
+  async persist(): Promise<void> {
+    await import("@/lib/hermesApi").then((m) => m.writeJsonFile(REPO_KEY, this.state));
+  }
+
+  getState(): GithubState {
+    return this.state;
+  }
+
+  isLinked(): boolean {
+    return this.state.linked;
+  }
+
+  getUser(): string | undefined {
+    return this.state.user;
+  }
+
+  getRepos(): CockpitRepo[] {
+    return [...this.state.repos].sort((a, b) => a.order - b.order);
+  }
+
+  getRepo(id: string): CockpitRepo | undefined {
+    return this.state.repos.find((r) => r.id === id);
+  }
+
+  async setLinked(linked: boolean, user?: string): Promise<void> {
+    this.state.linked = linked;
+    if (user !== undefined) this.state.user = user;
+    if (!linked) this.state.user = undefined;
+    await this.persist();
+  }
+
+  async addRepo(owner: string, name: string, branch = "main"): Promise<CockpitRepo> {
+    const id = `r-${owner}-${name}`;
+    const existing = this.getRepo(id);
+    if (existing) return existing;
+    const repo: CockpitRepo = {
+      id,
+      owner,
+      name,
+      branch,
+      icon: "❖",
+      order: this.state.repos.length,
+    };
+    this.state.repos.push(repo);
+    await this.persist();
+    return repo;
+  }
+
+  async removeRepo(id: string): Promise<void> {
+    this.state.repos = this.state.repos.filter((r) => r.id !== id);
+    await this.persist();
+  }
+
+  async setClonePath(id: string, path: string): Promise<void> {
+    const r = this.getRepo(id);
+    if (!r) return;
+    r.clonePath = path;
+    await this.persist();
+  }
+
+  isLoaded(): boolean {
+    return this.loaded;
+  }
+}
+
+export const repoStore = new RepoStore();
 
 export const cockpitStore = new CockpitStore();

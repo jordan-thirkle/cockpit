@@ -1,15 +1,18 @@
 import { useState } from "react";
 import { cockpitStore, type CockpitFolder } from "@/lib/cockpitStore";
 import { ThemePicker } from "@/themes";
+import { Repositories } from "./Repositories";
 
 export function Sidebar({
   activeFolder,
   onSelect,
   sessionCount,
+  onOpenRepo,
 }: {
   activeFolder: string;
   onSelect: (id: string) => void;
   sessionCount: (folderId: string) => number;
+  onOpenRepo: (repo: import("@/lib/cockpitStore").CockpitRepo) => void;
 }) {
   const folders = cockpitStore.getFolders();
   const [creating, setCreating] = useState(false);
@@ -91,6 +94,8 @@ export function Sidebar({
       <div className="sidebar-foot">
         <span>Hermes v0.20.6</span>
       </div>
+
+      <Repositories onOpenRepo={onOpenRepo} />
     </aside>
   );
 }
