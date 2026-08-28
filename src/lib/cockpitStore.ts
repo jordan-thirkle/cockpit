@@ -185,6 +185,21 @@ export class CockpitStore {
   isLoaded(): boolean {
     return this.loaded;
   }
+
+  async setSeenOnboarding(): Promise<void> {
+    const flags = (await import("@/lib/hermesApi").then((m) =>
+      m.readJsonFile<{ onboardingSeen?: boolean }>("flags", {}),
+    )) as { onboardingSeen?: boolean };
+    flags.onboardingSeen = true;
+    await import("@/lib/hermesApi").then((m) => m.writeJsonFile("flags", flags));
+  }
+
+  async hasSeenOnboarding(): Promise<boolean> {
+    const flags = await import("@/lib/hermesApi").then((m) =>
+      m.readJsonFile<{ onboardingSeen?: boolean }>("flags", {}),
+    );
+    return Boolean(flags.onboardingSeen);
+  }
 }
 
 const REPO_KEY = "repos";

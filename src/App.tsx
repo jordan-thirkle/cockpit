@@ -7,6 +7,7 @@ import {
 } from "@/lib/hermesApi";
 import { cockpitStore } from "@/lib/cockpitStore";
 import { repoStore, type CockpitRepo } from "@/lib/cockpitStore";
+import { Onboarding } from "./components/Onboarding";
 import { Login } from "./components/Login";
 import { Sidebar } from "./components/Sidebar";
 import { SessionList } from "./components/SessionList";
@@ -23,6 +24,7 @@ export function App() {
   const [activeSession, setActiveSession] = useState<SessionInfo | null>(null);
   const [activeRepo, setActiveRepo] = useState<CockpitRepo | null>(null);
   const [view, setView] = useState<"organize" | "control">("organize");
+  const [showOnboarding, setShowOnboarding] = useState(false);
   const [query, setQuery] = useState("");
 
   // ── auth gate ──────────────────────────────────────────────────────────
@@ -42,6 +44,8 @@ export function App() {
     (async () => {
       await cockpitStore.load();
       await repoStore.load();
+      const seen = await cockpitStore.hasSeenOnboarding();
+      setShowOnboarding(!seen);
       const data = await getSessions(500, 0, "recent");
       setSessions(data.sessions);
     })();
@@ -76,6 +80,7 @@ export function App() {
 
   return (
     <ThemeProvider>
+    {showOnboarding && <Onboarding onDone={() => setShowOnboarding(false)} />}
     <div className={`app${activeSession ? " with-chat" : ""}`}>
       <Sidebar
         activeFolder={activeFolder}

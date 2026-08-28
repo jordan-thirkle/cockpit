@@ -289,3 +289,31 @@ a { color: var(--signal); }
 .cc-loading { color: var(--muted); font-style: italic; }
 .guide-chat { margin-top: 4px; padding: 8px 12px; font-size: 12px; height: auto; align-self: flex-start; }
 
+/* ── First-run onboarding ──────────────────────────────────────────── */
+.onboard-overlay {
+  position: fixed; inset: 0; z-index: 50; display: grid; place-items: center;
+  background: rgba(22, 21, 19, 0.55); backdrop-filter: blur(3px); padding: 20px;
+}
+.onboard-card {
+  background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius);
+  max-width: 560px; width: 100%; padding: 32px; text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+}
+.onboard-emoji { font-size: 44px; }
+.onboard-card h1 { margin: 8px 0 12px; font-size: 26px; }
+.onboard-card h2 { margin: 0 0 8px; font-size: 22px; }
+.onboard-lead { color: var(--muted); font-size: 14px; line-height: 1.55; margin: 0 0 20px; }
+.onboard-next { padding: 10px 22px; font-size: 14px; }
+.onboard-skip { display: block; margin: 12px auto 0; background: none; border: none; color: var(--muted); font-size: 12px; text-decoration: underline; }
+.onboard-presets { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
+.onboard-preset {
+  display: flex; flex-direction: column; align-items: flex-start; gap: 2px; text-align: left;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  padding: 12px; cursor: pointer;
+}
+.onboard-preset.sel { border-color: var(--signal); background: var(--surface-2); }
+.onboard-preset-icon { font-size: 20px; }
+.onboard-preset-label { font-weight: 600; font-size: 14px; }
+.onboard-preset-blurb { font-size: 11px; color: var(--muted); }
+.onboard-actions { display: flex; justify-content: space-between; gap: 10px; }
+
