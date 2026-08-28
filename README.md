@@ -10,9 +10,9 @@ Cockpit rides the stock Hermes backend through the `HERMES_WEB_DIST` environment
 
 - **Organize chats the way you work.** Stock Hermes has rename + search but no folders. Cockpit gives you a folder sidebar, assign-any-session-to-a-folder, unassigned "Inbox", and an "Archive" for done work. Folder assignment persists server-side across restarts.
 - **Survives `hermes update`.** Cockpit is built to its own `dist/` and pointed at via `HERMES_WEB_DIST`. The Hermes install updates independently; your UI is untouched.
-- **Works behind basic auth / LAN.** It replicates the stock dashboard's auth flow (cookie + single-use WebSocket ticket), so it works on a gated, non-loopback bind (e.g. `192.168.1.155:3001`) exactly like the stock UI.
+- **Works behind basic auth / LAN.** It replicates the stock dashboard's auth flow (cookie + single-use WebSocket ticket), so it works on a gated, non-loopback bind (e.g. `http://<LAN-IP>:3001`) exactly like the stock UI.
 - **Doesn't touch Hermes internals.** Folder metadata is stored in `HERMES_HOME/data/cockpit/*.json` via the dashboard's own file API — outside `state.db`, outside the git clone.
-- **Calm, premium, byjtt-branded.** Warm near-black canvas, terracotta `#BE3718` signal. No cyan/magenta "AI slop" neon.
+- **Calm, premium, byjtt-branded.** Warm light-paper canvas with the verified byjtt.com tokens; a terracotta `#BE3718` signal used sparingly. Pluggable themes (see `src/themes/`). No cyan/magenta "AI slop" neon.
 
 ## Quick start
 
@@ -36,7 +36,7 @@ HERMES_WEB_DIST="$PWD/dist" hermes dashboard --port 3001 --host 0.0.0.0 --no-ope
 
 For a push-button build+relaunch, use the included scripts: `deploy.ps1` (Windows) / `deploy.sh` (Linux/macOS).
 
-Open `http://127.0.0.1:3001` (local) or `http://192.168.1.155:3001` (LAN). Log in with your Hermes basic-auth credentials.
+Open `http://127.0.0.1:3001` (local) or `http://<LAN-IP>:3001` (LAN, where `<LAN-IP>` is this machine's address). Log in with your Hermes basic-auth credentials.
 
 > Requires a `hermes dashboard` with `dashboard.basic_auth` configured. See the [Hermes docs](https://hermes-agent.nousresearch.com/docs/) for enabling basic auth.
 

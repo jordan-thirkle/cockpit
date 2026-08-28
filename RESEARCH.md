@@ -2,7 +2,7 @@
 
 > Sourced from live GitHub repos via the GitHub API + README extraction (not
 > memory). Cockpit's own API surface verified against the running Hermes
-> install at `C:\Users\jorda\AppData\Local\hermes\hermes-agent`.
+> install at `hermes-agent` (the git-cloned Hermes Agent directory).
 
 ## The field (stars / license / last push — live)
 | Project | Stars | License | What it actually is |

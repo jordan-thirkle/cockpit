@@ -150,6 +150,18 @@ export function deleteSession(id: string): Promise<{ ok: boolean }> {
   return fetchJSON(`/api/sessions/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
+// ── Memory status (feature #2 from RESEARCH.md) ──
+export interface MemoryStatus {
+  active?: string | null;
+  providers?: Array<{ name: string; ready: boolean; configured: boolean }>;
+  memory_file_sizes?: Record<string, number>;
+  [k: string]: unknown;
+}
+
+export function getMemoryStatus(): Promise<MemoryStatus> {
+  return fetchJSON<MemoryStatus>("/api/memory");
+}
+
 // Structured run/trace view (feature #1 from RESEARCH.md).
 export function getSessionMessages(
   id: string,

@@ -20,4 +20,4 @@ fi
 
 HERMES_WEB_DIST="$DIST" nohup hermes dashboard --port 3001 --host 0.0.0.0 --no-open >/tmp/cockpit.log 2>&1 &
 sleep 2
-echo "Cockpit live at http://127.0.0.1:3001"
+echo "Cockpit live at http://127.0.0.1:3001  (or http://<LAN-IP>:3001 on your network)"

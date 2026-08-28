@@ -11,6 +11,7 @@ import { Sidebar } from "./components/Sidebar";
 import { SessionList } from "./components/SessionList";
 import { ChatPanel } from "./components/ChatPanel";
 import { WorkspacePanel } from "./components/WorkspacePanel";
+import { MemoryPanel } from "./components/MemoryPanel";
 import { ThemeProvider } from "@/themes";
 
 export function App() {
@@ -99,17 +100,20 @@ export function App() {
           }}
         />
         {folder && (
-          <WorkspacePanel
-            folder={folder}
-            onUpdate={async (patch) => {
-              await cockpitStore.updateFolder(folder.id, patch);
-              setSessions((p) => [...p]);
-            }}
-            onDelete={async () => {
-              await cockpitStore.deleteFolder(folder.id);
-              setActiveFolder("inbox");
-            }}
-          />
+          <>
+            <WorkspacePanel
+              folder={folder}
+              onUpdate={async (patch) => {
+                await cockpitStore.updateFolder(folder.id, patch);
+                setSessions((p) => [...p]);
+              }}
+              onDelete={async () => {
+                await cockpitStore.deleteFolder(folder.id);
+                setActiveFolder("inbox");
+              }}
+            />
+            <MemoryPanel />
+          </>
         )}
       </div>
 

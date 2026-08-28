@@ -34,4 +34,4 @@ Start-Process -FilePath 'hermes' `
 Start-Sleep -Seconds 2
 Write-Host "Cockpit live:"
 Write-Host "  Local: http://127.0.0.1:3001"
-Write-Host "  LAN:   http://192.168.1.155:3001"
+Write-Host "  LAN:   http://<LAN-IP>:3001   (replace <LAN-IP> with this machine's LAN address)"
