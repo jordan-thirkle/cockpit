@@ -317,3 +317,17 @@ a { color: var(--signal); }
 .onboard-preset-blurb { font-size: 11px; color: var(--muted); }
 .onboard-actions { display: flex; justify-content: space-between; gap: 10px; }
 
+/* ── Session list: source filter + badges ───────────────────────────── */
+.source-filter {
+  display: flex; flex-wrap: wrap; gap: 4px; padding: 0 12px 8px;
+}
+.sf-btn {
+  background: var(--chip); border: 1px solid var(--line); color: var(--muted);
+  border-radius: 20px; padding: 3px 9px; font-size: 11px;
+}
+.sf-btn.active { background: var(--signal); color: #fff; border-color: var(--signal); }
+.src-badge {
+  font-size: 10px; color: var(--muted); border: 1px solid var(--line);
+  border-radius: 20px; padding: 1px 7px; white-space: nowrap;
+}
+

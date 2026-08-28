@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { cockpitStore, type CockpitFolder } from "@/lib/cockpitStore";
 import type { SessionInfo } from "@/lib/hermesApi";
 
@@ -10,6 +11,32 @@ function relTime(iso: string | null): string {
   if (s < 86400) return `${Math.floor(s / 3600)}h`;
   return `${Math.floor(s / 86400)}d`;
 }
+
+// Human label for a session's origin (where the chat came from).
+// The Hermes sessions API returns a `source` string per SessionInfo.
+// We map the known values to friendly labels; unknown values pass through.
+function sourceLabel(s: SessionInfo): string {
+  const raw = s.source ?? "";
+  if (!raw) return "chat";
+  const key = raw.toLowerCase();
+  const map: Record<string, string> = {
+    tui: "Terminal",
+    terminal: "Terminal",
+    telegram: "Telegram",
+    whatsapp: "WhatsApp",
+    web: "Web",
+    cron: "Scheduled",
+    scheduled: "Scheduled",
+    desktop: "Desktop",
+    gateway: "Gateway",
+    api: "API",
+  };
+  return map[key] ?? raw;
+}
+
+// Filter pill labels, in presentation order. kept short and stable so the
+// filter row never grows unbounded as new source values appear upstream.
+const FILTER_SOURCES = ["All", "Terminal", "Telegram", "Web", "Scheduled"];
 
 export function SessionList({
   folderName,
@@ -32,16 +59,24 @@ export function SessionList({
   onNewChat: () => void;
   onAssign: (sessionId: string, folderId: string) => void;
 }) {
+  const [srcFilter, setSrcFilter] = useState("All");
   const folders = cockpitStore.getFolders().filter((f) => !f.system || f.id !== "inbox");
+
+  // Only filter when a real pill is picked; "All" shows everything.
+  const filtered =
+    srcFilter === "All"
+      ? sessions
+      : sessions.filter((s) => sourceLabel(s) === srcFilter);
 
   return (
     <>
       <div className="list-head">
-        <div className="list-title">{folderName}</div>
-        <div className="list-sub">
-          {folderSubtitle || `${sessions.length} sessions`}
+        <div>
+          <div className="list-title">{folderName}</div>
+          <div className="list-sub">{folderSubtitle || `${sessions.length} sessions`}</div>
         </div>
       </div>
+
       <div className="search">
         <input
           placeholder="Search sessions…"
@@ -53,14 +88,29 @@ export function SessionList({
         </button>
       </div>
 
+      <div className="source-filter" role="group" aria-label="Filter sessions by source">
+        {FILTER_SOURCES.map((s) => (
+          <button
+            key={s}
+            type="button"
+            aria-pressed={srcFilter === s}
+            className={srcFilter === s ? "sf-btn active" : "sf-btn"}
+            onClick={() => setSrcFilter(s)}
+          >
+            {s}
+          </button>
+        ))}
+      </div>
+
       <div className="session-list">
-        {sessions.length === 0 && (
+        {filtered.length === 0 && (
           <div style={{ color: "var(--muted)", padding: "16px 10px", fontSize: 13 }}>
             No sessions here yet.
           </div>
         )}
-        {sessions.map((s) => {
+        {filtered.map((s) => {
           const f = cockpitStore.getFolderForSession(s.id);
+          const src = sourceLabel(s);
           return (
             <div
               key={s.id}
@@ -72,9 +122,10 @@ export function SessionList({
                 {s.title ?? "(untitled)"}
               </div>
               <div className="session-meta">
-                <span>{s.model ?? s.source}</span>
-                <span>·</span>
-                <span>{s.message_count} msgs</span>
+                <span className="src-badge">{src}</span>
+                {s.model && <span>· {s.model}</span>}
+                <span>· {s.message_count} msgs</span>
+                {s.tool_call_count > 0 && <span>· {s.tool_call_count} tools</span>}
                 {s.updated_at && <span>· {relTime(s.updated_at)}</span>}
                 <span
                   className="session-folder-tag"
