@@ -44,6 +44,23 @@ export interface PaginatedSessions {
   offset: number;
 }
 
+// ── Verified message/trace contract (from stock Hermes web/src/lib/api.ts) ──
+// GET /api/sessions/{id}/messages?limit=500&order=latest
+export interface SessionMessage {
+  role: "user" | "assistant" | "system" | "tool";
+  content: string | null;
+  tool_calls?: Array<{ id: string; function: { name: string; arguments: string } }>;
+  tool_name?: string;
+  tool_call_id?: string;
+  timestamp?: number;
+}
+
+export interface SessionMessagesResponse {
+  session_id: string;
+  messages: SessionMessage[];
+  pagination?: { limit: number; offset: number; order: "latest" | "oldest"; returned: number };
+}
+
 async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
   const token = (window as any).__HERMES_SESSION_TOKEN__;
@@ -131,6 +148,17 @@ export function renameSession(id: string, title: string): Promise<{ ok: boolean 
 
 export function deleteSession(id: string): Promise<{ ok: boolean }> {
   return fetchJSON(`/api/sessions/${encodeURIComponent(id)}`, { method: "DELETE" });
+}
+
+// Structured run/trace view (feature #1 from RESEARCH.md).
+export function getSessionMessages(
+  id: string,
+  order: "latest" | "oldest" = "oldest",
+  limit = 500,
+): Promise<SessionMessagesResponse> {
+  return fetchJSON<SessionMessagesResponse>(
+    `/api/sessions/${encodeURIComponent(id)}/messages?limit=${limit}&order=${order}`,
+  );
 }
 
 // ── PTY / Chat WebSocket ────────────────────────────────────────────────

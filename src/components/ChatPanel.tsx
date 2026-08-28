@@ -1,14 +1,16 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import "@xterm/xterm/css/xterm.css";
 import { buildPtyWsUrl, generateChannelId, type SessionInfo } from "@/lib/hermesApi";
+import { TraceView } from "./TraceView";
 
 export function ChatPanel({ session }: { session: SessionInfo | null }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const [tab, setTab] = useState<"terminal" | "trace">("terminal");
 
   useEffect(() => {
     const host = hostRef.current;
@@ -19,10 +21,11 @@ export function ChatPanel({ session }: { session: SessionInfo | null }) {
       fontFamily: "var(--font-mono), monospace",
       fontSize: 13,
       cursorBlink: true,
+      // Theme-aware: dark cockpit palette (readable on the surface-2 terminal bg).
       theme: {
-        background: "#161513",
+        background: "#1e1c19",
         foreground: "#ece7dd",
-        cursor: "#c9a227",
+        cursor: "#be3718",
         selectionBackground: "#34302a",
         black: "#26231f",
         red: "#be3718",
@@ -90,10 +93,30 @@ export function ChatPanel({ session }: { session: SessionInfo | null }) {
       <div className="chat-head">
         <h2>{session?.title ?? "New chat"}</h2>
         <span className="meta">{session?.model ?? session?.source ?? ""}</span>
+        <div className="chat-toolbar">
+          <button
+            className={tab === "terminal" ? "btn-ghost active" : "btn-ghost"}
+            onClick={() => setTab("terminal")}
+          >
+            Terminal
+          </button>
+          <button
+            className={tab === "trace" ? "btn-ghost active" : "btn-ghost"}
+            onClick={() => setTab("trace")}
+          >
+            Trace
+          </button>
+        </div>
       </div>
-      <div className="term-wrap" ref={wrapRef}>
-        <div className="terminal" ref={hostRef} />
-      </div>
+      {tab === "terminal" ? (
+        <div className="term-wrap" ref={wrapRef}>
+          <div className="terminal" ref={hostRef} />
+        </div>
+      ) : (
+        <div className="trace-wrap">
+          <TraceView sessionId={session?.id ?? ""} />
+        </div>
+      )}
     </section>
   );
 }

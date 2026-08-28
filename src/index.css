@@ -180,3 +180,32 @@ a { color: var(--signal); }
 .login-card input:focus { border-color: var(--signal); }
 .login-card .btn-primary { width: 100%; margin-top: 18px; padding: 10px; height: auto; }
 .login-error { color: var(--danger); font-size: 12px; margin-top: 10px; min-height: 14px; }
+
+/* ── Trace / tool-call view ──────────────────────────────────────────── */
+.trace-wrap { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 16px; }
+.trace { display: flex; flex-direction: column; height: 100%; }
+.trace-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.trace-tabs button {
+  background: var(--chip); border: 1px solid var(--line); color: var(--muted);
+  border-radius: var(--radius-sm); padding: 5px 12px; font-size: 12px; font-weight: 550;
+}
+.trace-tabs button.active { background: var(--signal); color: #fff; border-color: var(--signal); }
+.trace-feed { display: flex; flex-direction: column; gap: 8px; }
+.trace-row { display: grid; grid-template-columns: 64px 1fr; gap: 10px; align-items: start; }
+.trace-role { text-align: right; padding-top: 2px; }
+.role-tag {
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  background: var(--chip); border: 1px solid var(--line);
+  border-radius: 20px; padding: 2px 8px;
+}
+.role-tag.tool { color: var(--signal); border-color: var(--signal); }
+.trace-body { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 9px 11px; }
+.trace-text { font-size: 13px; white-space: pre-wrap; word-break: break-word; color: var(--ink); }
+.trace-text.muted { color: var(--muted); }
+.tool-chip { margin-bottom: 6px; }
+.tool-name { font-size: 12px; font-weight: 600; color: var(--signal); }
+.tool-chip code, .tool-args { display: block; font-family: var(--font-mono); font-size: 11px; color: var(--muted); white-space: pre-wrap; word-break: break-word; }
+.tool-row { display: flex; gap: 10px; align-items: baseline; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm); padding: 8px 11px; }
+.tool-badge { font-size: 12px; font-weight: 600; color: var(--signal); white-space: nowrap; }
+.mono { font-family: var(--font-mono); }
+.trace-empty { color: var(--muted); font-size: 13px; padding: 16px 4px; }
