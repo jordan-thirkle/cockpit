@@ -162,6 +162,47 @@ export function getMemoryStatus(): Promise<MemoryStatus> {
   return fetchJSON<MemoryStatus>("/api/memory");
 }
 
+// ── Control Center: honest, verified endpoints only ──
+// Skills are readable from the skills directory via the managed-files API.
+export interface SkillEntry {
+  name: string;
+  description: string;
+}
+export async function listSkills(): Promise<SkillEntry[]> {
+  try {
+    const r = await fetchJSON<{ entries: Array<{ name: string; is_directory: boolean; mime_type: string | null }> }>(
+      `/api/fs?path=skills`,
+    );
+    return r.entries
+      .filter((e) => e.is_directory)
+      .map((e) => ({ name: e.name, description: "" }));
+  } catch {
+    return [];
+  }
+}
+
+export interface ConfigSchema {
+  fields: Record<string, unknown>;
+  category_order?: string[];
+}
+export function getConfigSchema(): Promise<ConfigSchema> {
+  return fetchJSON<ConfigSchema>("/api/config/schema");
+}
+
+export interface ProviderInfo {
+  id: string;
+  name?: string;
+  type?: string;
+}
+export async function listProviders(): Promise<ProviderInfo[]> {
+  try {
+    const r = await fetchJSON<{ providers?: ProviderInfo[] }>("/api/providers/oauth");
+    return r.providers ?? [];
+  } catch {
+    return [];
+  }
+}
+
 // Structured run/trace view (feature #1 from RESEARCH.md).
 export function getSessionMessages(
   id: string,

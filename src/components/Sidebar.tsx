@@ -8,11 +8,15 @@ export function Sidebar({
   onSelect,
   sessionCount,
   onOpenRepo,
+  view,
+  onView,
 }: {
   activeFolder: string;
   onSelect: (id: string) => void;
   sessionCount: (folderId: string) => number;
   onOpenRepo: (repo: import("@/lib/cockpitStore").CockpitRepo) => void;
+  view: "organize" | "control";
+  onView: (v: "organize" | "control") => void;
 }) {
   const folders = cockpitStore.getFolders();
   const [creating, setCreating] = useState(false);
@@ -41,6 +45,21 @@ export function Sidebar({
           <ThemePicker />
         </div>
       </div>
+
+      <nav className="topnav" aria-label="Primary">
+        <button
+          className={view === "organize" ? "topnav-btn active" : "topnav-btn"}
+          onClick={() => onView("organize")}
+        >
+          Organize
+        </button>
+        <button
+          className={view === "control" ? "topnav-btn active" : "topnav-btn"}
+          onClick={() => onView("control")}
+        >
+          Control Center
+        </button>
+      </nav>
 
       <div className="sidebar-scroll">
         {folders.map((f: CockpitFolder) => (

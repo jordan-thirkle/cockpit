@@ -1,0 +1,102 @@
+{
+  "providers": {
+    "what": "The service that supplies Hermes with its AI brain — the place where the actual language model lives and does the thinking.",
+    "why": "You pick a provider so Hermes can talk to a model that fits your needs, budget, or privacy rules.",
+    "steps": [
+      "Open the providers section in settings.",
+      "Choose a provider you have access to.",
+      "Pick a model from its list and save."
+    ],
+    "gotcha": "Some providers need an account or payment method first — a blank reply usually means the key isn't linked yet."
+  },
+  "apikeys": {
+    "what": "A secret password that lets Hermes prove it's allowed to use a paid AI service.",
+    "why": "Without a key, Hermes can't reach most providers, so it can't answer or do work.",
+    "steps": [
+      "Get a key from your provider's website.",
+      "Paste it into the API key field.",
+      "Save and test with a simple question."
+    ],
+    "gotcha": "Never share your key in chat or screenshots — anyone who sees it can spend your money."
+  },
+  "tools": {
+    "what": "Built-in abilities that let Hermes actually do things, like running code or searching the web.",
+    "why": "Tools turn Hermes from a chat box into something that can act on the real world.",
+    "steps": [
+      "Browse the list of available tools.",
+      "Toggle on the ones you want enabled.",
+      "Try a task that uses one, like a web search."
+    ],
+    "gotcha": "Enabling too many tools at once can confuse Hermes about which to use — start small."
+  },
+  "skills": {
+    "what": "Reusable recipes that teach Hermes how to handle a specific type of job well.",
+    "why": "Skills save you from repeating instructions every time you want the same result.",
+    "steps": [
+      "Look through the skills library.",
+      "Enable or load one that fits your task.",
+      "Ask Hermes to do the job and it follows the recipe."
+    ],
+    "gotcha": "A skill only helps if its description matches your request — vague asks may skip it."
+  },
+  "mcp": {
+    "what": "A bridge that connects Hermes to other apps and outside services through a standard plug-in.",
+    "why": "MCP lets Hermes reach tools and data living in programs you already use.",
+    "steps": [
+      "Find an MCP server for the service you want.",
+      "Add its connection details in settings.",
+      "Turn it on and test a command."
+    ],
+    "gotcha": "If the server isn't running, Hermes can't see it — check the connection is live first."
+  },
+  "bots": {
+    "what": "Little automated helpers that can run Hermes tasks for you without you typing each time.",
+    "why": "Bots handle routine jobs or reply in chats so you don't have to be present.",
+    "steps": [
+      "Create a new bot and give it a name.",
+      "Connect it to a channel or schedule.",
+      "Tell it what task to run."
+    ],
+    "gotcha": "A bot will keep doing its job on its own — double-check its instructions before letting it run freely."
+  },
+  "memory": {
+    "what": "Hermes's notebook that remembers useful facts about you and past conversations.",
+    "why": "Memory lets Hermes pick up where it left off instead of starting blank every time.",
+    "steps": [
+      "Open the memory section.",
+      "Add a note about a preference or fact.",
+      "Ask a follow-up question to see it recalled."
+    ],
+    "gotcha": "Too much saved memory clutters replies — clear out old or wrong notes now and then."
+  },
+  "cron": {
+    "what": "A timer that tells Hermes to do a task automatically at times you choose.",
+    "why": "Cron runs jobs for you on a schedule, like a daily report, while you sleep.",
+    "steps": [
+      "Open the schedule or cron section.",
+      "Write a task and pick when it should run.",
+      "Save and confirm it fires once to test."
+    ],
+    "gotcha": "Times usually follow a specific timezone — a job may run hours off from what you expect."
+  },
+  "gateway": {
+    "what": "A door that lets Hermes talk to you through apps like Telegram or other chat platforms.",
+    "why": "A gateway means you can message Hermes from your phone instead of a terminal.",
+    "steps": [
+      "Open the gateway settings.",
+      "Connect a chat app using its setup steps.",
+      "Send a test message from that app."
+    ],
+    "gotcha": "Messages from the gateway may need you to start the chat first before Hermes can reply."
+  },
+  "config": {
+    "what": "The master settings file where all of Hermes's preferences are stored as text.",
+    "why": "Editing the config lets you change many settings at once and back them up easily.",
+    "steps": [
+      "Find the config file in your settings or folder.",
+      "Read the existing options.",
+      "Change one value and save to see the effect."
+    ],
+    "gotcha": "A single typo in the config can stop Hermes from starting — keep a backup copy."
+  }
+}

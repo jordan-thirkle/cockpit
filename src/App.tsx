@@ -11,6 +11,7 @@ import { Login } from "./components/Login";
 import { Sidebar } from "./components/Sidebar";
 import { SessionList } from "./components/SessionList";
 import { ChatPanel } from "./components/ChatPanel";
+import { ControlCenter } from "./components/ControlCenter";
 import { WorkspacePanel } from "./components/WorkspacePanel";
 import { MemoryPanel } from "./components/MemoryPanel";
 import { ThemeProvider } from "@/themes";
@@ -21,6 +22,7 @@ export function App() {
   const [activeFolder, setActiveFolder] = useState<string>("inbox");
   const [activeSession, setActiveSession] = useState<SessionInfo | null>(null);
   const [activeRepo, setActiveRepo] = useState<CockpitRepo | null>(null);
+  const [view, setView] = useState<"organize" | "control">("organize");
   const [query, setQuery] = useState("");
 
   // ── auth gate ──────────────────────────────────────────────────────────
@@ -77,6 +79,8 @@ export function App() {
     <div className={`app${activeSession ? " with-chat" : ""}`}>
       <Sidebar
         activeFolder={activeFolder}
+        view={view}
+        onView={setView}
         onSelect={setActiveFolder}
         onOpenRepo={(r) => {
           setActiveRepo(r);
@@ -126,6 +130,7 @@ export function App() {
 
       {activeSession && <ChatPanel session={activeSession} />}
       {activeRepo && <ChatPanel repo={activeRepo} />}
+      {view === "control" && !activeSession && !activeRepo && <ControlCenter />}
     </div>
     </ThemeProvider>
   );
