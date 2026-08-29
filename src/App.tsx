@@ -3,6 +3,10 @@ import {
   isAuthRequired,
   getAuthMe,
   getSessions,
+  renameSession,
+  deleteSession,
+  archiveSession,
+  exportSession,
   type SessionInfo,
 } from "@/lib/hermesApi";
 import { cockpitStore } from "@/lib/cockpitStore";
@@ -77,11 +81,9 @@ export function App() {
   }, []);
 
   // ── load store + sessions once authed ──────────────────────────────────
-  const [sessionsRev, setSessionsRev] = useState(0);
   const refreshSessions = async () => {
     const data = await getSessions(500, 0, "recent");
     setSessions(data.sessions);
-    setSessionsRev((n) => n + 1);
   };
   useEffect(() => {
     if (authed !== true) return;

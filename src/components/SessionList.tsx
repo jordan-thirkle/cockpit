@@ -48,6 +48,11 @@ export function SessionList({
   onOpen,
   onNewChat,
   onAssign,
+  onRefresh,
+  onRename,
+  onDelete,
+  onArchive,
+  onExport,
 }: {
   folderName: string;
   folderSubtitle: string;
@@ -58,6 +63,11 @@ export function SessionList({
   onOpen: (s: SessionInfo) => void;
   onNewChat: () => void;
   onAssign: (sessionId: string, folderId: string) => void;
+  onRefresh?: () => void;
+  onRename?: (id: string, title: string) => void;
+  onDelete?: (id: string) => void;
+  onArchive?: (id: string, archive: boolean) => void;
+  onExport?: (id: string) => void;
 }) {
   const [srcFilter, setSrcFilter] = useState("All");
   const folders = cockpitStore.getFolders().filter((f) => !f.system || f.id !== "inbox");
@@ -83,6 +93,7 @@ export function SessionList({
           value={query}
           onChange={(e) => setQuery(e.target.value)}
         />
+        <button className="btn-ghost" onClick={onRefresh} title="Refresh">↻</button>
         <button className="btn-ghost" onClick={onNewChat} title="New chat">
           ＋
         </button>
@@ -150,6 +161,38 @@ export function SessionList({
                     <option value="inbox">Inbox</option>
                     <option value="archive">Archive</option>
                   </select>
+                </span>
+                <span className="session-actions" onClick={(e) => e.stopPropagation()}>
+                  <button
+                    type="button"
+                    className="sa-btn"
+                    title="Rename"
+                    onClick={() => {
+                      const cur = s.title ?? "";
+                      const next = prompt("Rename session", cur);
+                      if (next != null && next !== cur) onRename?.(s.id, next);
+                    }}
+                  >✎</button>
+                  <button
+                    type="button"
+                    className="sa-btn"
+                    title="Archive"
+                    onClick={() => onArchive?.(s.id, !(s.archived ?? false))}
+                  >⊟</button>
+                  <button
+                    type="button"
+                    className="sa-btn"
+                    title="Export .md"
+                    onClick={() => onExport?.(s.id)}
+                  >↓</button>
+                  <button
+                    type="button"
+                    className="sa-btn danger"
+                    title="Delete"
+                    onClick={() => {
+                      if (confirm(`Delete session "${s.title ?? "(untitled)"}"? This cannot be undone.`)) onDelete?.(s.id);
+                    }}
+                  >✕</button>
                 </span>
               </div>
             </div>

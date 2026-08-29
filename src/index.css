@@ -286,6 +286,18 @@ a { color: var(--signal); }
   border: 1px solid var(--line); border-radius: 20px; padding: 0 6px;
 }
 
+.session-actions {
+  display: flex; gap: 2px; margin-left: 6px; flex-shrink: 0;
+}
+.sa-btn {
+  width: 18px; height: 18px; border: 1px solid var(--line); background: transparent;
+  color: var(--muted); border-radius: 4px; cursor: pointer; font-size: 10px;
+  display: flex; align-items: center; justify-content: center; padding: 0;
+  line-height: 1;
+}
+.sa-btn:hover { background: var(--surface-2); color: var(--ink); }
+.sa-btn.danger:hover { border-color: var(--danger); color: var(--danger); }
+
 /* ── Chat pane ────────────────────────────────────────────────────────── */
 .chat-pane { display: flex; flex-direction: column; min-height: 0; background: var(--paper); }
 .chat-head {
