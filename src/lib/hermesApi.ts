@@ -170,11 +170,13 @@ export interface SkillEntry {
 }
 export async function listSkills(): Promise<SkillEntry[]> {
   try {
-    const r = await fetchJSON<{ entries: Array<{ name: string; is_directory: boolean; mime_type: string | null }> }>(
-      `/api/fs?path=skills`,
+    // Backend serves a managed-files listing at /api/fs/list?path=<rel>.
+    // Response entries use camelCase: { name, path, isDirectory }.
+    const r = await fetchJSON<{ entries: Array<{ name: string; isDirectory: boolean }> }>(
+      `/api/fs/list?path=skills`,
     );
-    return r.entries
-      .filter((e) => e.is_directory)
+    return (r.entries ?? [])
+      .filter((e) => e.isDirectory)
       .map((e) => ({ name: e.name, description: "" }));
   } catch {
     return [];
@@ -263,18 +265,20 @@ export async function readJsonFile<T>(name: string, fallback: T): Promise<T> {
 }
 
 export async function writeJsonFile(name: string, data: unknown): Promise<void> {
-  // Use the fs write-text endpoint (managed, HERMES_HOME rooted).
-  const res = await fetch(`${BASE}/api/fs/write-text`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-    body: JSON.stringify({
-      path: `${COCKPIT_DIR}/${name}.json`,
-      text: JSON.stringify(data, null, 2),
-      create_missing_parents: true,
-    }),
-  });
-  if (!res.ok) {
+  // Use the fs write-text endpoint (managed, HERMES_HOME-rooted).
+  // Backend model uses `content` (not `text`) and will NOT auto-create
+  // parent dirs — ensure data/cockpit exists once (idempotent).
+  try {
+    await fetch(`${BASE}/api/fs/write-text`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        path: `${COCKPIT_DIR}/${name}.json`,
+        content: JSON.stringify(data, null, 2),
+      }),
+    });
+  } catch {
     // Fallback to localStorage if the API is unavailable (e.g. headless).
     try {
       localStorage.setItem(`cockpit:${name}`, JSON.stringify(data));
