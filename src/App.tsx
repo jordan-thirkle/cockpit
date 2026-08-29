@@ -77,6 +77,12 @@ export function App() {
   }, []);
 
   // ── load store + sessions once authed ──────────────────────────────────
+  const [sessionsRev, setSessionsRev] = useState(0);
+  const refreshSessions = async () => {
+    const data = await getSessions(500, 0, "recent");
+    setSessions(data.sessions);
+    setSessionsRev((n) => n + 1);
+  };
   useEffect(() => {
     if (authed !== true) return;
     (async () => {
@@ -84,9 +90,15 @@ export function App() {
       await repoStore.load();
       const seen = await cockpitStore.hasSeenOnboarding();
       setShowOnboarding(!seen);
-      const data = await getSessions(500, 0, "recent");
-      setSessions(data.sessions);
+      await refreshSessions();
     })();
+  }, [authed]);
+
+  // Live refresh: keep the session list current without a manual reload.
+  useEffect(() => {
+    if (authed !== true) return;
+    const t = setInterval(refreshSessions, 15000);
+    return () => clearInterval(t);
   }, [authed]);
 
   const visible = useMemo(() => {
@@ -203,7 +215,35 @@ export function App() {
             }}
             onAssign={async (sid, fid) => {
               await cockpitStore.assignSession(sid, fid);
-              setSessions((prev) => [...prev]);
+              await refreshSessions();
+            }}
+            onRefresh={() => refreshSessions()}
+            onRename={async (id, title) => {
+              await renameSession(id, title);
+              await refreshSessions();
+            }}
+            onDelete={async (id) => {
+              await deleteSession(id);
+              await refreshSessions();
+            }}
+            onArchive={async (id, archive) => {
+              await archiveSession(id, archive);
+              await refreshSessions();
+            }}
+            onExport={async (id) => {
+              const d = await exportSession(id);
+              if (d?.markdown) {
+                const blob = new Blob([d.markdown], { type: "text/markdown" });
+                const url = URL.createObjectURL(blob);
+                const a = Object.assign(document.createElement("a"), {
+                  href: url,
+                  download: `${id}.md`,
+                });
+                a.click();
+                setTimeout(() => URL.revokeObjectURL(url), 1000);
+              } else {
+                alert("Export returned no content.");
+              }
             }}
           />
           {folder && (
