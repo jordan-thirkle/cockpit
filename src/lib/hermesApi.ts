@@ -150,6 +150,34 @@ export function deleteSession(id: string): Promise<{ ok: boolean }> {
   return fetchJSON(`/api/sessions/${encodeURIComponent(id)}`, { method: "DELETE" });
 }
 
+export function archiveSession(id: string, archive = true): Promise<{ ok: boolean }> {
+  return fetchJSON(`/api/sessions/${encodeURIComponent(id)}/archive`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ archive }),
+  });
+}
+
+export function exportSession(id: string): Promise<{ markdown?: string; [k: string]: unknown }> {
+  return fetchJSON(`/api/sessions/${encodeURIComponent(id)}/export`);
+}
+
+export function pruneEmptySessions(): Promise<{ ok: boolean; pruned?: number }> {
+  return fetchJSON(`/api/sessions/prune`, { method: "POST" });
+}
+
+export function bulkDeleteSessions(ids: string[]): Promise<{ ok: boolean }> {
+  return fetchJSON(`/api/sessions/bulk-delete`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ids }),
+  });
+}
+
+export function emptySessionCount(): Promise<{ count: number }> {
+  return fetchJSON(`/api/sessions/empty/count`);
+}
+
 // ── Memory status (feature #2 from RESEARCH.md) ──
 export interface MemoryStatus {
   active?: string | null;
