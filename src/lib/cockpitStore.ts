@@ -111,7 +111,13 @@ export class CockpitStore {
   private mergeFolders(saved: CockpitFolder[]): CockpitFolder[] {
     const byId = new Map<string, CockpitFolder>();
     for (const f of DEFAULT_FOLDERS) byId.set(f.id, structuredClone(f));
-    for (const f of saved) byId.set(f.id, { ...f });
+    // Defensive: ignore entries missing a usable id (a stale/old-shape
+    // payload like {"folders":[]} would otherwise create a phantom folder).
+    if (Array.isArray(saved)) {
+      for (const f of saved) {
+        if (f && typeof f.id === "string" && f.id) byId.set(f.id, { ...f });
+      }
+    }
     return [...byId.values()].sort((a, b) => a.order - b.order);
   }
 

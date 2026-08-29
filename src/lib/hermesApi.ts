@@ -303,6 +303,9 @@ export async function readJsonFile<T>(name: string, fallback: T): Promise<T> {
     );
     return JSON.parse(r.text) as T;
   } catch {
+    // Server read failed (unauth / network). Return defaults rather than
+    // silently trusting a stale localStorage copy — the server is the
+    // source of truth and split-brain would lose the user's data on reload.
     return fallback;
   }
 }
@@ -311,23 +314,23 @@ export async function writeJsonFile(name: string, data: unknown): Promise<void> 
   // Use the fs write-text endpoint (managed, HERMES_HOME-rooted).
   // Backend model uses `content` (not `text`) and will NOT auto-create
   // parent dirs — ensure data/cockpit exists once (idempotent).
-  try {
-    await fetch(`${BASE}/api/fs/write-text`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify({
-        path: `${COCKPIT_DIR}/${name}.json`,
-        content: JSON.stringify(data, null, 2),
-      }),
-    });
-  } catch {
-    // Fallback to localStorage if the API is unavailable (e.g. headless).
-    try {
-      localStorage.setItem(`cockpit:${name}`, JSON.stringify(data));
-    } catch {
-      /* ignore */
-    }
+  // NOTE: do NOT fall back to localStorage on failure. That created a
+  // split-brain where the browser "saved" locally but the server file
+  // stayed stale, so changes vanished on reload. Surface errors instead.
+  const res = await fetch(`${BASE}/api/fs/write-text`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({
+      path: `${COCKPIT_DIR}/${name}.json`,
+      content: JSON.stringify(data, null, 2),
+    }),
+  });
+  if (!res.ok) {
+    const body = await res.text().catch(() => "");
+    throw new Error(
+      `writeJsonFile(${name}) failed: ${res.status} ${res.statusText} ${body.slice(0, 200)}`,
+    );
   }
 }
 
