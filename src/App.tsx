@@ -15,11 +15,19 @@ import { ChatPanel } from "./components/ChatPanel";
 import { ControlCenter } from "./components/ControlCenter";
 import { WorkspacePanel } from "./components/WorkspacePanel";
 import { MemoryPanel } from "./components/MemoryPanel";
+// Cockpit-themed structured views (no upstream Hermes page exists).
 import {
   StatusPage,
   GatewayPage,
   GatewayStatusPage,
   ConfigDefaultsPage,
+  MemoryProvidersPage,
+  ToolsetsPage,
+  ModelInfoPage,
+} from "@/hermes/ThemedPages";
+// Hermes's own solved dashboard pages, vendored into src/hermes/vendor and
+// hosted by a thin provider/router adapter (integrate, don't rebuild).
+import {
   EnvPage,
   FilesPage,
   LogsPage,
@@ -28,11 +36,8 @@ import {
   ProfilesPage,
   SystemPage,
   DocsPage,
-  MemoryProvidersPage,
   ChannelsPage,
-  ToolsetsPage,
-  ModelInfoPage,
-} from "./components/Pages";
+} from "@/hermes/HermesPages2";
 // Hermes's own solved dashboard pages, vendored into src/hermes/vendor and
 // hosted by a thin provider/router adapter (integrate, don't rebuild).
 import {

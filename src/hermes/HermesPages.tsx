@@ -19,7 +19,7 @@ const VendorMcp = lazy(() => import("@/hermes/vendor/pages/McpPage"));
 const VendorPlugins = lazy(() => import("@/hermes/vendor/pages/PluginsPage"));
 const VendorConfig = lazy(() => import("@/hermes/vendor/pages/ConfigPage"));
 
-function HermesPageHost({ children }: { children: ReactNode }) {
+export function HermesPageHost({ children }: { children: ReactNode }) {
   const [title, setTitle] = useState<string | null>(null);
   const [afterTitle, setAfterTitle] = useState<ReactNode>(null);
   const [end, setEnd] = useState<ReactNode>(null);

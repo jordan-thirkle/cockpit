@@ -193,6 +193,12 @@ a { color: var(--signal); }
   /* Vendored Hermes tables: scroll horizontally instead of breaking layout. */
   .table-wrap, table { width: 100%; }
   .page table, .card table { display: block; overflow-x: auto; }
+  /* Login + onboarding must fit a phone screen. */
+  .login { padding: 16px; }
+  .login-card { width: 100%; max-width: 360px; padding: 22px 18px; }
+  .onboard-overlay { padding: 14px; align-items: start; overflow-y: auto; }
+  .onboard-card { padding: 22px 16px; }
+  .onboard-presets { grid-template-columns: 1fr; }
 }
 
 /* Global responsive safety for vendored content + cards. */
