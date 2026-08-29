@@ -8,10 +8,10 @@ import {
   getEnv,
   getFiles,
   getLogs,
-  getWebhooksList,
+  getWebhooks,
   getMessagingPlatforms,
   getPairing,
-  getPluginsList,
+  getPlugins,
   getProfiles,
   getSystem,
   getDocs,
@@ -51,13 +51,13 @@ export const LogsPage = () => (
   <ApiPage title="Logs" subtitle="Recent runtime logs" fetcher={() => getLogs(200)} redact={redactSecrets} />
 );
 export const WebhooksPage = () => (
-  <ApiPage title="Webhooks" subtitle="Registered webhook subscriptions" fetcher={getWebhooksList} redact={redactSecrets} />
+  <ApiPage title="Webhooks" subtitle="Registered webhook subscriptions" fetcher={getWebhooks} redact={redactSecrets} />
 );
 export const PairingPage = () => (
   <ApiPage title="Pairing" subtitle="Device / DM authorization" fetcher={getPairing} redact={redactSecrets} />
 );
 export const PluginsPage = () => (
-  <ApiPage title="Plugins" subtitle="Installed dashboard plugins" fetcher={getPluginsList} redact={redactSecrets} />
+  <ApiPage title="Plugins" subtitle="Installed dashboard plugins" fetcher={getPlugins} redact={redactSecrets} />
 );
 export const ProfilesPage = () => (
   <ApiPage title="Profiles" subtitle="Hermes named profiles" fetcher={getProfiles} redact={redactSecrets} />

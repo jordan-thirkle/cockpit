@@ -356,18 +356,18 @@ export const getPairing = () => fetchJSON<any>("/api/pairing");
 export const getCron = () => fetchJSON<any>("/api/cron");
 export const getCronJobs = () => fetchJSON<any>("/api/cron/jobs");
 export const getWebhooks = () => fetchJSON<any>("/api/webhooks");
-export const getWebhooksList = () => fetchJSON<any>("/api/webhooks/list");
+export const getWebhooksList = () => fetchJSON<any>("/api/webhooks");
 export const getFiles = (path = "/") =>
   fetchJSON<any>(`/api/files?path=${encodeURIComponent(path)}`);
 export const getLogs = (n = 200) =>
   fetchJSON<any>(`/api/logs?n=${n}`);
-export const getPlugins = () => fetchJSON<any>("/api/plugins");
-export const getPluginsList = () => fetchJSON<any>("/api/plugins/list");
-export const getSystem = () => fetchJSON<any>("/api/system");
+export const getPlugins = () => fetchJSON<any>("/api/dashboard/plugins");
+export const getPluginsList = () => fetchJSON<any>("/api/dashboard/plugins");
 export const getDocs = () => fetchJSON<any>("/api/docs");
 export const getProfiles = () => fetchJSON<any>("/api/profiles");
-export const getProfileBuilder = () => fetchJSON<any>("/api/profile-builder");
-export const getMemoryProviders = () =>
-  fetchJSON<any>("/api/memory/providers");
+export const getProfileBuilder = () => fetchJSON<any>("/api/profiles/active");
 export const getAchievements = () =>
-  fetchJSON<any>("/api/plugins/hermes-achievements/state");
+  fetchJSON<any>("/api/dashboard/plugins/hermes-achievements/state");
+export const getSystem = () => fetchJSON<any>("/api/system/stats");
+export const getMemoryProviders = () =>
+  fetchJSON<any>("/api/memory");
