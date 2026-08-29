@@ -19,27 +19,31 @@ import {
   StatusPage,
   GatewayPage,
   GatewayStatusPage,
-  ConfigPage,
   ConfigDefaultsPage,
   EnvPage,
   FilesPage,
   LogsPage,
   WebhooksPage,
   PairingPage,
-  PluginsPage,
   ProfilesPage,
   SystemPage,
   DocsPage,
   MemoryProvidersPage,
-  CronPage,
-  McpPage,
   ChannelsPage,
   ToolsetsPage,
   ModelInfoPage,
-  AnalyticsUsagePage,
-  AnalyticsModelsPage,
-  SkillsPage,
 } from "./components/Pages";
+// Hermes's own solved dashboard pages, vendored into src/hermes/vendor and
+// hosted by a thin provider/router adapter (integrate, don't rebuild).
+import {
+  HermesAnalyticsPage,
+  HermesConfigPage,
+  HermesCronPage,
+  HermesMcpPage,
+  HermesModelsPage,
+  HermesPluginsPage,
+  HermesSkillsPage,
+} from "@/hermes/HermesPages";
 import { AchievementsPage } from "./components/AchievementsPage";
 import { ThreeDViewer } from "./components/ThreeDViewer";
 import { ThemeProvider } from "@/themes";
@@ -132,26 +136,27 @@ export function App() {
       {page === "status" && <StatusPage />}
       {page === "gateway" && <GatewayPage />}
       {page === "gateway-status" && <GatewayStatusPage />}
-      {page === "config" && <ConfigPage />}
+      {page === "config" && <HermesConfigPage />}
       {page === "config-defaults" && <ConfigDefaultsPage />}
       {page === "env" && <EnvPage />}
       {page === "files" && <FilesPage />}
       {page === "logs" && <LogsPage />}
       {page === "webhooks" && <WebhooksPage />}
       {page === "pairing" && <PairingPage />}
-      {page === "plugins" && <PluginsPage />}
+      {page === "plugins" && <HermesPluginsPage />}
       {page === "profiles" && <ProfilesPage />}
       {page === "system" && <SystemPage />}
       {page === "docs" && <DocsPage />}
       {page === "memory-providers" && <MemoryProvidersPage />}
-      {page === "cron" && <CronPage />}
-      {page === "mcp" && <McpPage />}
+      {page === "cron" && <HermesCronPage />}
+      {page === "mcp" && <HermesMcpPage />}
       {page === "channels" && <ChannelsPage />}
       {page === "toolsets" && <ToolsetsPage />}
       {page === "model-info" && <ModelInfoPage />}
-      {page === "analytics-usage" && <AnalyticsUsagePage />}
-      {page === "analytics-models" && <AnalyticsModelsPage />}
-      {page === "skills" && <SkillsPage />}
+      {page === "analytics-usage" && <HermesAnalyticsPage />}
+      {page === "analytics-models" && <HermesAnalyticsPage />}
+      {page === "models" && <HermesModelsPage />}
+      {page === "skills" && <HermesSkillsPage />}
       {page === "achievements" && <AchievementsPage />}
       {page === "3d" && <ThreeDViewer />}
 

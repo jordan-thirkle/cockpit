@@ -61,7 +61,7 @@ export interface SessionMessagesResponse {
   pagination?: { limit: number; offset: number; order: "latest" | "oldest"; returned: number };
 }
 
-async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> {
+export async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> {
   const headers = new Headers(init?.headers);
   const token = (window as any).__HERMES_SESSION_TOKEN__;
   if (token && !isAuthRequired()) headers.set(SESSION_HEADER, token);
@@ -260,7 +260,7 @@ export async function setModel(
     body: JSON.stringify(body),
   });
 }
-async function buildWsAuthParam(): Promise<[string, string]> {
+export async function buildWsAuthParam(): Promise<[string, string]> {
   if (isAuthRequired()) {
     const { ticket } = await fetchJSON<{ ticket: string; ttl_seconds: number }>(
       "/api/auth/ws-ticket",

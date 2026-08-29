@@ -1,5 +1,6 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
+import tailwindcss from "@tailwindcss/vite";
 import { resolve } from "node:path";
 
 // The dashboard serves whatever is in the directory pointed at by HERMES_WEB_DIST.
@@ -7,7 +8,7 @@ import { resolve } from "node:path";
 // relative to THIS repo by outputting to ./dist, which is then symlinked/copied
 // into the serve directory. Keep the same flat `assets/` + `index.html` shape.
 export default defineConfig({
-  plugins: [react()],
+  plugins: [react(), tailwindcss()],
   build: {
     // Relative base so the same bundle works whether served at root or under a
     // proxy prefix (Hermes rewrites absolute /assets/ URLs when X-Forwarded-Prefix is set).
@@ -32,8 +33,17 @@ export default defineConfig({
     },
   },
   resolve: {
-    alias: {
-      "@": resolve(__dirname, "src"),
-    },
+    alias: [
+      // @nous-research/ui@1.5.2 ships subpath modules as
+      // dist/<area>/<name>/index.js, but its exports map only declares the flat
+      // `./ui/*` -> dist/ui/*.js pattern, which Rollup can't resolve. Map the
+      // deep subpaths Hermes's vendored pages import straight onto dist/.
+      // Path shim only — we integrate the published components, not reimplement.
+      {
+        find: /^@nous-research\/ui\/(ui|hooks|utils)\/(.*)$/,
+        replacement: resolve(__dirname, "node_modules/@nous-research/ui/dist") + "/$1/$2",
+      },
+      { find: "@", replacement: resolve(__dirname, "src") },
+    ],
   },
 });
