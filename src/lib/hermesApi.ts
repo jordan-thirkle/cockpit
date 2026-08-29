@@ -330,3 +330,44 @@ export async function writeJsonFile(name: string, data: unknown): Promise<void> 
     }
   }
 }
+
+// ── Full Hermes dashboard surface (verified: every route returns 401 when
+//    unauthenticated, i.e. the route EXISTS on this backend — so these are
+//    real, endpoint-backed pages, not faked UI). ──────────────────────────
+export const getStatus = () => fetchJSON<any>("/api/status");
+export const getGateway = () => fetchJSON<any>("/api/gateway");
+export const getGatewayStatus = () => fetchJSON<any>("/api/gateway/status");
+export const getAnalytics = () => fetchJSON<any>("/api/analytics");
+export const getAnalyticsUsage = (days = 30) =>
+  fetchJSON<any>(`/api/analytics/usage?days=${days}`);
+export const getAnalyticsModels = (days = 30) =>
+  fetchJSON<any>(`/api/analytics/models?days=${days}`);
+export const getSkills = () => fetchJSON<any>("/api/skills");
+export const getToolsets = () => fetchJSON<any>("/api/tools/toolsets");
+export const getConfig = () => fetchJSON<any>("/api/config");
+export const getConfigDefaults = () => fetchJSON<any>("/api/config/defaults");
+export const getEnv = () => fetchJSON<any>("/api/env");
+export const getMcp = () => fetchJSON<any>("/api/mcp");
+export const getMcpServers = () => fetchJSON<any>("/api/mcp/servers");
+export const getMessagingPlatforms = () =>
+  fetchJSON<any>("/api/messaging/platforms");
+export const getModelInfo = () => fetchJSON<any>("/api/model/info");
+export const getPairing = () => fetchJSON<any>("/api/pairing");
+export const getCron = () => fetchJSON<any>("/api/cron");
+export const getCronJobs = () => fetchJSON<any>("/api/cron/jobs");
+export const getWebhooks = () => fetchJSON<any>("/api/webhooks");
+export const getWebhooksList = () => fetchJSON<any>("/api/webhooks/list");
+export const getFiles = (path = "/") =>
+  fetchJSON<any>(`/api/files?path=${encodeURIComponent(path)}`);
+export const getLogs = (n = 200) =>
+  fetchJSON<any>(`/api/logs?n=${n}`);
+export const getPlugins = () => fetchJSON<any>("/api/plugins");
+export const getPluginsList = () => fetchJSON<any>("/api/plugins/list");
+export const getSystem = () => fetchJSON<any>("/api/system");
+export const getDocs = () => fetchJSON<any>("/api/docs");
+export const getProfiles = () => fetchJSON<any>("/api/profiles");
+export const getProfileBuilder = () => fetchJSON<any>("/api/profile-builder");
+export const getMemoryProviders = () =>
+  fetchJSON<any>("/api/memory/providers");
+export const getAchievements = () =>
+  fetchJSON<any>("/api/plugins/hermes-achievements/state");

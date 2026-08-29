@@ -28,6 +28,115 @@ a { color: var(--signal); }
 
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-thumb { background: var(--line); border-radius: 6px; }
+
+/* ── Multi-page shell ──────────────────────────────────────────────── */
+.nav-group {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin: 14px 12px 4px;
+  font-weight: 600;
+}
+.nav-item {
+  padding: 6px 12px;
+  margin: 1px 8px;
+  border-radius: 7px;
+  font-size: 13px;
+  color: var(--ink);
+  cursor: pointer;
+}
+.nav-item:hover { background: var(--wash); }
+.nav-item.active { background: var(--signal); color: #fff; }
+
+/* ── Generic page primitive ───────────────────────────────────────── */
+.page {
+  flex: 1;
+  overflow-y: auto;
+  padding: 26px 30px;
+  height: 100%;
+}
+.page-head h1 { font-size: 21px; margin: 0 0 4px; letter-spacing: -0.01em; }
+.page-sub { color: var(--muted); margin: 0 0 18px; font-size: 13px; max-width: 70ch; }
+.page-state { color: var(--muted); padding: 30px 0; }
+.page-state.err { color: #BE3718; }
+
+.json-view {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 16px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 70vh;
+  overflow: auto;
+}
+
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+.info-card {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+  background: var(--paper);
+}
+.info-card.unlocked { border-color: var(--signal); }
+.info-card-title { font-weight: 600; font-size: 14px; }
+.info-card-sub { color: var(--muted); font-size: 12px; margin-top: 4px; min-height: 18px; }
+.info-card-meta { color: var(--muted); font-size: 11px; margin-top: 8px; }
+.ach-progress {
+  height: 6px; background: var(--wash); border-radius: 4px; margin-top: 10px; overflow: hidden;
+}
+.ach-bar { height: 100%; background: var(--signal); }
+
+/* ── 3D session viewer (Cockpit-original) ────────────────────────── */
+.viewer-stage {
+  height: 60vh;
+  min-height: 420px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: radial-gradient(circle at 50% 40%, var(--wash), var(--paper));
+  perspective: 1100px;
+  overflow: hidden;
+  display: grid;
+  place-items: center;
+}
+.viewer-world {
+  position: relative;
+  width: 0; height: 0;
+  transform-style: preserve-3d;
+  transition: transform 0.05s linear;
+}
+.viewer-node {
+  position: absolute;
+  left: 0; top: 0;
+  margin: -12px 0 0 -12px;
+  border-radius: 50%;
+  transform-style: preserve-3d;
+  display: grid;
+  place-items: center;
+}
+.viewer-label {
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 10px;
+  color: var(--muted);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.viewer-legend {
+  display: flex; flex-wrap: wrap; gap: 10px 18px;
+  margin-top: 16px; font-size: 12px; color: var(--muted);
+}
+.legend-item { display: inline-flex; align-items: center; gap: 6px; }
+.legend-item i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 ::-webkit-scrollbar-thumb:hover { background: var(--muted); }
 ::-webkit-scrollbar-track { background: transparent; }
 

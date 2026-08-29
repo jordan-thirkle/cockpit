@@ -15,6 +15,33 @@ import { ChatPanel } from "./components/ChatPanel";
 import { ControlCenter } from "./components/ControlCenter";
 import { WorkspacePanel } from "./components/WorkspacePanel";
 import { MemoryPanel } from "./components/MemoryPanel";
+import {
+  StatusPage,
+  GatewayPage,
+  GatewayStatusPage,
+  ConfigPage,
+  ConfigDefaultsPage,
+  EnvPage,
+  FilesPage,
+  LogsPage,
+  WebhooksPage,
+  PairingPage,
+  PluginsPage,
+  ProfilesPage,
+  SystemPage,
+  DocsPage,
+  MemoryProvidersPage,
+  CronPage,
+  McpPage,
+  ChannelsPage,
+  ToolsetsPage,
+  ModelInfoPage,
+  AnalyticsUsagePage,
+  AnalyticsModelsPage,
+  SkillsPage,
+} from "./components/Pages";
+import { AchievementsPage } from "./components/AchievementsPage";
+import { ThreeDViewer } from "./components/ThreeDViewer";
 import { ThemeProvider } from "@/themes";
 
 export function App() {
@@ -24,7 +51,7 @@ export function App() {
   const [activeSession, setActiveSession] = useState<SessionInfo | null>(null);
   const [activeRepo, setActiveRepo] = useState<CockpitRepo | null>(null);
   const [newChat, setNewChat] = useState(false);
-  const [view, setView] = useState<"organize" | "control">("organize");
+  const [page, setPage] = useState<string>("organize");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [query, setQuery] = useState("");
 
@@ -85,8 +112,8 @@ export function App() {
     <div className={`app${activeSession ? " with-chat" : ""}`}>
       <Sidebar
         activeFolder={activeFolder}
-        view={view}
-        onView={setView}
+        page={page}
+        onPage={setPage}
         onSelect={setActiveFolder}
         onOpenRepo={(r) => {
           setActiveRepo(r);
@@ -101,52 +128,83 @@ export function App() {
         }
       />
 
-      <div className={`list-pane${view === "control" ? " hidden" : ""}`}>
-        <SessionList
-          folderName={folder?.name ?? "Sessions"}
-          folderSubtitle={folder?.subtitle ?? ""}
-          sessions={visible}
-          query={query}
-          setQuery={setQuery}
-          activeId={activeSession?.id}
-          onOpen={(s) => {
-            setNewChat(false);
-            setActiveSession(s);
-          }}
-          onNewChat={() => {
-            setActiveSession(null);
-            setActiveRepo(null);
-            setNewChat(true);
-          }}
-          onAssign={async (sid, fid) => {
-            await cockpitStore.assignSession(sid, fid);
-            setSessions((prev) => [...prev]);
-          }}
-        />
-        {folder && (
-          <>
-            <WorkspacePanel
-              folder={folder}
-              onUpdate={async (patch) => {
-                await cockpitStore.updateFolder(folder.id, patch);
-                setSessions((p) => [...p]);
-              }}
-              onDelete={async () => {
-                await cockpitStore.deleteFolder(folder.id);
-                setActiveFolder("inbox");
-              }}
-            />
-            <MemoryPanel />
-          </>
-        )}
-      </div>
+      {/* Hermes dashboard pages (endpoint-backed) */}
+      {page === "status" && <StatusPage />}
+      {page === "gateway" && <GatewayPage />}
+      {page === "gateway-status" && <GatewayStatusPage />}
+      {page === "config" && <ConfigPage />}
+      {page === "config-defaults" && <ConfigDefaultsPage />}
+      {page === "env" && <EnvPage />}
+      {page === "files" && <FilesPage />}
+      {page === "logs" && <LogsPage />}
+      {page === "webhooks" && <WebhooksPage />}
+      {page === "pairing" && <PairingPage />}
+      {page === "plugins" && <PluginsPage />}
+      {page === "profiles" && <ProfilesPage />}
+      {page === "system" && <SystemPage />}
+      {page === "docs" && <DocsPage />}
+      {page === "memory-providers" && <MemoryProvidersPage />}
+      {page === "cron" && <CronPage />}
+      {page === "mcp" && <McpPage />}
+      {page === "channels" && <ChannelsPage />}
+      {page === "toolsets" && <ToolsetsPage />}
+      {page === "model-info" && <ModelInfoPage />}
+      {page === "analytics-usage" && <AnalyticsUsagePage />}
+      {page === "analytics-models" && <AnalyticsModelsPage />}
+      {page === "skills" && <SkillsPage />}
+      {page === "achievements" && <AchievementsPage />}
+      {page === "3d" && <ThreeDViewer />}
+
+      {/* Cockpit's core organizer surface */}
+      {page === "organize" && (
+        <div className={`list-pane`}>
+          <SessionList
+            folderName={folder?.name ?? "Sessions"}
+            folderSubtitle={folder?.subtitle ?? ""}
+            sessions={visible}
+            query={query}
+            setQuery={setQuery}
+            activeId={activeSession?.id}
+            onOpen={(s) => {
+              setNewChat(false);
+              setActiveSession(s);
+            }}
+            onNewChat={() => {
+              setActiveSession(null);
+              setActiveRepo(null);
+              setNewChat(true);
+            }}
+            onAssign={async (sid, fid) => {
+              await cockpitStore.assignSession(sid, fid);
+              setSessions((prev) => [...prev]);
+            }}
+          />
+          {folder && (
+            <>
+              <WorkspacePanel
+                folder={folder}
+                onUpdate={async (patch) => {
+                  await cockpitStore.updateFolder(folder.id, patch);
+                  setSessions((p) => [...p]);
+                }}
+                onDelete={async () => {
+                  await cockpitStore.deleteFolder(folder.id);
+                  setActiveFolder("inbox");
+                }}
+              />
+              <MemoryPanel />
+            </>
+          )}
+        </div>
+      )}
+
+      {page === "control" && (
+        <ControlCenter onClose={() => setPage("organize")} />
+      )}
 
       {activeSession && <ChatPanel session={activeSession} />}
       {activeRepo && <ChatPanel repo={activeRepo} />}
       {newChat && !activeSession && !activeRepo && <ChatPanel session={null} />}
-      {view === "control" && !activeSession && !activeRepo && !newChat && (
-        <ControlCenter onClose={() => setView("organize")} />
-      )}
     </div>
     </ThemeProvider>
   );

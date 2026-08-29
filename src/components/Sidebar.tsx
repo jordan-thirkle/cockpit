@@ -3,20 +3,52 @@ import { cockpitStore, type CockpitFolder } from "@/lib/cockpitStore";
 import { ThemePicker } from "@/themes";
 import { Repositories } from "./Repositories";
 
+type NavItem = { id: string; label: string; group: string };
+
+const PAGES: NavItem[] = [
+  { id: "organize", label: "Organize", group: "Cockpit" },
+  { id: "control", label: "Control Center", group: "Cockpit" },
+  { id: "3d", label: "3D Session Graph", group: "Cockpit" },
+  { id: "achievements", label: "Achievements", group: "Cockpit" },
+  { id: "skills", label: "Skills", group: "Hermes" },
+  { id: "model-info", label: "Model", group: "Hermes" },
+  { id: "toolsets", label: "Toolsets", group: "Hermes" },
+  { id: "channels", label: "Channels", group: "Hermes" },
+  { id: "cron", label: "Cron Jobs", group: "Hermes" },
+  { id: "mcp", label: "MCP Servers", group: "Hermes" },
+  { id: "webhooks", label: "Webhooks", group: "Hermes" },
+  { id: "plugins", label: "Plugins", group: "Hermes" },
+  { id: "profiles", label: "Profiles", group: "Hermes" },
+  { id: "pairing", label: "Pairing", group: "Hermes" },
+  { id: "memory-providers", label: "Memory", group: "Hermes" },
+  { id: "analytics-usage", label: "Analytics · Usage", group: "Hermes" },
+  { id: "analytics-models", label: "Analytics · Models", group: "Hermes" },
+  { id: "config", label: "Config", group: "Hermes" },
+  { id: "config-defaults", label: "Config Defaults", group: "Hermes" },
+  { id: "env", label: "Environment", group: "Hermes" },
+  { id: "files", label: "Files", group: "Hermes" },
+  { id: "logs", label: "Logs", group: "Hermes" },
+  { id: "gateway", label: "Gateway", group: "Hermes" },
+  { id: "gateway-status", label: "Gateway Status", group: "Hermes" },
+  { id: "system", label: "System", group: "Hermes" },
+  { id: "docs", label: "Docs", group: "Hermes" },
+  { id: "status", label: "Status", group: "Hermes" },
+];
+
 export function Sidebar({
   activeFolder,
+  page,
+  onPage,
   onSelect,
-  sessionCount,
   onOpenRepo,
-  view,
-  onView,
+  sessionCount,
 }: {
   activeFolder: string;
+  page: string;
+  onPage: (p: string) => void;
   onSelect: (id: string) => void;
-  sessionCount: (folderId: string) => number;
   onOpenRepo: (repo: import("@/lib/cockpitStore").CockpitRepo) => void;
-  view: "organize" | "control";
-  onView: (v: "organize" | "control") => void;
+  sessionCount: (folderId: string) => number;
 }) {
   const folders = cockpitStore.getFolders();
   const [creating, setCreating] = useState(false);
@@ -30,6 +62,8 @@ export function Sidebar({
     setCreating(false);
     onSelect(f.id);
   };
+
+  let lastGroup = "";
 
   return (
     <aside className="sidebar">
@@ -46,29 +80,34 @@ export function Sidebar({
         </div>
       </div>
 
-      <nav className="topnav" aria-label="Primary">
-        <button
-          className={view === "organize" ? "topnav-btn active" : "topnav-btn"}
-          onClick={() => onView("organize")}
-        >
-          Organize
-        </button>
-        <button
-          className={view === "control" ? "topnav-btn active" : "topnav-btn"}
-          onClick={() => onView("control")}
-        >
-          Control Center
-        </button>
-      </nav>
-
       <div className="sidebar-scroll">
+        {PAGES.map((it) => {
+          const showGroup = it.group !== lastGroup;
+          lastGroup = it.group;
+          return (
+            <div key={it.id}>
+              {showGroup && <div className="nav-group">{it.group}</div>}
+              <div
+                className={`nav-item${page === it.id ? " active" : ""}`}
+                onClick={() => onPage(it.id)}
+              >
+                {it.label}
+              </div>
+            </div>
+          );
+        })}
+
+        <div className="nav-group">Folders</div>
         {folders.map((f: CockpitFolder) => (
           <div
             key={f.id}
             className={`folder${f.system ? " system" : ""}${
               activeFolder === f.id ? " active" : ""
             }`}
-            onClick={() => onSelect(f.id)}
+            onClick={() => {
+              onPage("organize");
+              onSelect(f.id);
+            }}
           >
             <span className="folder-icon">{f.icon ?? "▦"}</span>
             <span className="folder-name">{f.name}</span>
