@@ -119,7 +119,7 @@ export function ModelPicker({ onClose }: { onClose: () => void }) {
                 >
                   <span>{p.name}</span>
                   <span className="mp-count">
-                    {(p.models ?? []).length || p.total_models || 0}
+                    {(p.models ?? []).length || 0}
                   </span>
                 </button>
               ))}

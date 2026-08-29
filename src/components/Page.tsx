@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 
 export interface ApiPageProps {
   title: string;
@@ -8,17 +8,24 @@ export interface ApiPageProps {
   render?: (data: any) => ReactNode;
   /** Filter the JSON dump (omit raw tokens/secrets). */
   redact?: (key: string) => boolean;
+  /** Bump to force a refetch (e.g. after an action). */
+  reloadKey?: unknown;
 }
 
-export function ApiPage({ title, subtitle, fetcher, render, redact }: ApiPageProps) {
+export function ApiPage({ title, subtitle, fetcher, render, redact, reloadKey }: ApiPageProps) {
   const [state, setState] = useState<"loading" | "ok" | "err">("loading");
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string>("");
+  // Hold the latest fetcher in a ref so a new function identity (e.g. an inline
+  // arrow `() => getX(30)` recreated every render) does NOT retrigger the effect
+  // and cause an infinite refetch loop. The effect runs on mount + reloadKey.
+  const fetcherRef = useRef(fetcher);
+  fetcherRef.current = fetcher;
 
   useEffect(() => {
     let alive = true;
     setState("loading");
-    fetcher()
+    fetcherRef.current()
       .then((d) => {
         if (!alive) return;
         setData(d);
@@ -32,7 +39,7 @@ export function ApiPage({ title, subtitle, fetcher, render, redact }: ApiPagePro
     return () => {
       alive = false;
     };
-  }, [fetcher]);
+  }, [reloadKey]);
 
   return (
     <div className="page">
