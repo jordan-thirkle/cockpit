@@ -18,8 +18,32 @@ export function Repositories({
   const doLink = async () => {
     const u = ghUser.trim();
     if (!u) return;
-    // Cockpit stores only the linked username (no token). The agent uses the
-    // existing `gh`/GITHUB_TOKEN auth path for actual repo operations.
+    // Verify the username exists via the public GitHub API before storing it.
+    // This makes "Link GitHub" honest: we do not accept a name the user made up.
+    try {
+      const res = await fetch(`https://api.github.com/users/${encodeURIComponent(u)}`, {
+        headers: { Accept: "application/vnd.github+json" },
+      });
+      if (!res.ok) {
+        setGhUser("");
+        setLinking(false);
+        return;
+      }
+      const json = (await res.json()) as { login?: string };
+      if (!json.login || json.login.toLowerCase() !== u.toLowerCase()) {
+        setGhUser("");
+        setLinking(false);
+        return;
+      }
+    } catch {
+      // Network/API unavailable — do not store an unverified username.
+      setGhUser("");
+      setLinking(false);
+      return;
+    }
+    // Cockpit stores only the verified username (no token). The agent uses the
+    // existing `gh`/GITHUB_TOKEN auth path for actual repo operations. "Link GitHub"
+    // here means "the GitHub account exists at this username", not "we hold a token".
     await repoStore.setLinked(true, u);
     setLinking(false);
     setGhUser("");
@@ -40,7 +64,7 @@ export function Repositories({
       <div className="repos-head">
         <span className="repos-title">Repositories</span>
         {state.linked && state.user && (
-          <span className="repos-gh" title="Linked GitHub account">
+          <span className="repos-gh" title="Verified GitHub account">
             @{state.user}
           </span>
         )}
@@ -61,13 +85,15 @@ export function Repositories({
         <div className="repo-link-box">
           <input
             autoFocus
-            placeholder="GitHub username"
+            placeholder="GitHub username (verified via API)"
             value={ghUser}
             onChange={(e) => setGhUser(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && doLink()}
           />
           <div className="repo-link-note">
-            Uses Hermes's existing <code>gh</code>/GITHUB_TOKEN auth. No token stored in Cockpit.
+            Verifies the username via the public GitHub API before storing it.
+            Uses Hermes's existing <code>gh</code>/GITHUB_TOKEN auth for repo ops.
+            No token stored in Cockpit.
           </div>
           <div className="repo-link-actions">
             <button className="btn-primary" onClick={doLink}>

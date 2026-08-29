@@ -7,6 +7,8 @@ import { buildPtyWsUrl, generateChannelId, type SessionInfo } from "@/lib/hermes
 import { type CockpitRepo } from "@/lib/cockpitStore";
 import { TraceView } from "./TraceView";
 
+const REPO_CONTEXT_PREFIX = "\x1b[90m"; // bright black / muted
+
 export function ChatPanel({
   session,
   repo,
@@ -17,6 +19,7 @@ export function ChatPanel({
   const hostRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
+  const termRef = useRef<Terminal | null>(null);
   const [tab, setTab] = useState<"terminal" | "trace">("terminal");
 
   useEffect(() => {
@@ -45,6 +48,7 @@ export function ChatPanel({
         brightBlack: "#34302a",
       },
     });
+    termRef.current = term;
     const fit = new FitAddon();
     term.loadAddon(fit);
     term.loadAddon(new WebLinksAddon());
@@ -71,6 +75,24 @@ export function ChatPanel({
         ws.onopen = () => {
           term.focus();
           ws.send(`\x1b[RESIZE:${term.cols};${term.rows}]`);
+          // Seed repo context into the terminal if this is a repo workspace.
+          // This writes a visible, honest context block — NOT a hidden prompt.
+          // The Hermes agent behind the PTY reads the visible terminal text
+          // like any other user input, so the context is real, not faked.
+          if (repo) {
+            const ctx = [
+              `${REPO_CONTEXT_PREFIX}// ── Cockpit repo workspace ──────────────────────`,
+              `${REPO_CONTEXT_PREFIX}// Repository: ${repo.owner}/${repo.name}`,
+              `${REPO_CONTEXT_PREFIX}// Branch:     ${repo.branch}`,
+              `${REPO_CONTEXT_PREFIX}// Clone path: ${repo.clonePath ?? "not cloned yet (agent clones on demand)"}`,
+              `${REPO_CONTEXT_PREFIX}//`,
+              `${REPO_CONTEXT_PREFIX}// Start by cloning or fetching the repo if it is not`,
+              `${REPO_CONTEXT_PREFIX}// already on disk, confirm the branch, then ask what`,
+              `${REPO_CONTEXT_PREFIX}// to work on. Never push to main.`,
+              `${REPO_CONTEXT_PREFIX}// ──────────────────────────────────────────────────`,
+            ].join("\r\n");
+            term.write(ctx + "\r\n");
+          }
         };
         ws.onmessage = (e) => {
           const data =
@@ -126,6 +148,26 @@ export function ChatPanel({
                 title="Open a pull request (clone → edit → PR, never main)"
               >
                 New PR
+              </button>
+              <button
+                className="btn-ghost start-work-btn"
+                onClick={() => {
+                  // The repo workspace is already open with context seeded in
+                  // the PTY (see ws.onopen above). This button copies a clear
+                  // next-step prompt so the user can paste it into the terminal
+                  // and the agent clones/inspects the repo. The terminal is the
+                  // real work surface.
+                  const prompt = `Start work on ${repo?.owner}/${repo?.name}. Clone or fetch the repo if it's not already on disk, confirm the ${repo?.branch} branch, then ask what to work on. Never push to main.`;
+                  try {
+                    void navigator.clipboard?.writeText(prompt);
+                  } catch {
+                    /* clipboard may be blocked */
+                  }
+                  termRef.current?.focus();
+                }}
+                title="Copies a start-work prompt to your clipboard; paste it in the terminal"
+              >
+                Start work
               </button>
             </>
           ) : (

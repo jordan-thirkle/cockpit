@@ -111,7 +111,7 @@ export function Sidebar({
       </div>
 
       <div className="sidebar-foot">
-        <span>Hermes v0.20.6</span>
+        <span>by JTT</span>
       </div>
 
       <Repositories onOpenRepo={onOpenRepo} />

@@ -9,6 +9,16 @@
     ],
     "gotcha": "Some providers need an account or payment method first — a blank reply usually means the key isn't linked yet."
   },
+  "connections": {
+    "what": "The live links between Hermes and the services it uses — chat platforms, providers, and external tools.",
+    "why": "A connection that looks fine but is stale or broken means Hermes can't reach the service. The Connections card helps you spot those before they block your work.",
+    "steps": [
+      "Open the Connections card to see each service and its current status.",
+      "Read the plain-language status for anything marked unhealthy.",
+      "Follow the guided fix for the broken link, or ask the chat to diagnose it."
+    ],
+    "gotcha": "A connection can look connected but still fail on the next request — re-checking is worth doing if something silently stopped working."
+  },
   "apikeys": {
     "what": "A secret password that lets Hermes prove it's allowed to use a paid AI service.",
     "why": "Without a key, Hermes can't reach most providers, so it can't answer or do work.",

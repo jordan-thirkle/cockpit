@@ -32,9 +32,18 @@ export function ControlCenter() {
     getConfigSchema().then(setConfig).catch(() => setConfig(null));
   }, []);
 
-  const openChat = (cmd: string) => {
-    // Launch a new chat pre-seeded with the guiding command.
-    window.open(`/chat?prompt=${encodeURIComponent(cmd)}`, "_blank");
+  // "Open in chat" opens a fresh Cockpit tab (a real Hermes session) and
+  // copies the guiding prompt to the clipboard so the user can paste it
+  // immediately. Cockpit has no /chat?prompt= route (that would be a
+  // Hermes-core change), so we don't pretend one exists — we seed the
+  // clipboard instead, which is honest and actually useful.
+  const openChat = (hint: string) => {
+    try {
+      void navigator.clipboard?.writeText(hint);
+    } catch {
+      /* clipboard may be blocked; the hint is also shown in the card */
+    }
+    window.open("/", "_blank");
   };
 
   return (
@@ -56,7 +65,7 @@ export function ControlCenter() {
           what={C.skills.what}
           why={C.skills.why}
           chatHint="Browse and enable skills"
-          onOpenChat={() => openChat("List my installed skills and suggest which to enable for my work.")}
+          onOpenChat={() => openChat("Browse my installed Hermes skills and suggest which to enable for my work.")}
         >
           {skills === null ? (
             <span className="cc-loading">Loading skills…</span>
@@ -186,8 +195,8 @@ export function ControlCenter() {
         <GuideCard
           icon="🔗"
           title="Connections"
-          what={C.apikeys.what}
-          why="Keep service logins healthy so Hermes can act on your behalf without re-auth."
+          what={C.connections.what}
+          why={C.connections.why}
           chatHint="Check connections"
           onOpenChat={() => openChat("Check my Hermes connections and fix any that are broken.")}
         />

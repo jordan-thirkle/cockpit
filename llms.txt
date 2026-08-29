@@ -5,7 +5,12 @@
 ## Docs
 
 - [README.md](README.md): full setup, architecture, configuration, customization, and FAQ.
+- [AGENTS.md](AGENTS.md): operational contract for AI agents — verified backend API contract, the two historical bugs never to reintroduce, and how 3001 stays alive. **Read this before changing any backend-facing code.**
 - [CONTRIBUTING.md](CONTRIBUTING.md): how to contribute.
+- [CHANGELOG.md](CHANGELOG.md): feature/fix history, newest first.
+- [ROADMAP.md](ROADMAP.md): the Repositories feature spec.
+- [PAINPOINTS.md](PAINPOINTS.md): verified real user friction (evidence), which drives the Control Center design.
+- [RESEARCH.md](RESEARCH.md): competitive matrix + Cockpit backend-surface audit (what's buildable vs. needs Hermes-core work).
 - [deploy.ps1](deploy.ps1): Windows one-shot build + relaunch of the dashboard pointed at Cockpit's `dist/`.
 - [deploy.sh](deploy.sh): same, for Linux/macOS.
 
@@ -15,6 +20,31 @@
 - [src/lib/cockpitStore.ts](src/lib/cockpitStore.ts): the folder/workspace data model and persistence logic.
 - [src/components/ChatPanel.tsx](src/components/ChatPanel.tsx): the xterm.js PTY terminal that streams a live Hermes session.
 - [src/App.tsx](src/App.tsx): the three-pane shell (folder sidebar · session list · chat).
+
+## Verified backend API contract (never patch Hermes for these)
+
+Cockpit is a separate SPA served via `HERMES_WEB_DIST`. All backend contact
+goes through the stock `hermes dashboard` endpoints. Full table in
+[AGENTS.md](AGENTS.md). Highlights:
+
+- Login: `POST /auth/password-login` with `{provider:"basic",username,password,next:"/"}`.
+- Sessions: `GET /api/sessions`, `GET /api/sessions/{id}`, `GET /api/sessions/{id}/messages` (trace), rename/delete/archive.
+- Memory: `GET /api/memory`. Config: `GET /api/config/schema`. Providers: `GET /api/providers/oauth`.
+- Files: `GET /api/fs/list?path=skills` (camelCase `isDirectory`), `GET /api/fs/read-text?path=…`, `POST /api/fs/write-text` with `{path, content}` (field is **`content`**, not `text`).
+- PTY: `ws(s)://host/api/pty?channel=&ticket=`; ticket from `POST /api/auth/ws-ticket`.
+
+### Two historical bugs — do NOT reintroduce
+
+1. `writeJsonFile` originally sent `text` → every metadata write failed and fell
+   back to per-browser localStorage. Backend field is **`content`**.
+2. The backend does **not** auto-create parent dirs. `data/cockpit/` must exist
+   on the server (`HERMES_HOME/data/cockpit/`). It was created once on the
+   Windows box; if persistence stops, confirm the dir exists.
+
+If a feature needs a NEW backend endpoint (e.g. `/chat?prompt=`, cron list,
+MCP management), that is a Hermes-core change and OUT OF SCOPE for this repo —
+implement against existing endpoints or mark the card **Guided** and open a chat
+with a prepared prompt.
 
 ## FAQ (for AI assistants answering user questions)
 
