@@ -216,7 +216,50 @@ export function getSessionMessages(
   );
 }
 
-// ── PTY / Chat WebSocket ────────────────────────────────────────────────
+export interface ModelOptionProvider {
+  name: string;
+  slug: string;
+  models?: string[];
+  total_models?: number;
+  is_current?: boolean;
+}
+export interface ModelOptionsResponse {
+  model?: string;
+  provider?: string;
+  providers?: ModelOptionProvider[];
+}
+export async function getModelOptions(
+  includeUnconfigured = true,
+): Promise<ModelOptionsResponse> {
+  const qs = includeUnconfigured ? "?include_unconfigured=1" : "";
+  return fetchJSON<ModelOptionsResponse>(`/api/model/options${qs}`);
+}
+
+export interface ModelAssignment {
+  scope?: "main" | "auxiliary";
+  provider: string;
+  model: string;
+  base_url?: string;
+  api_key?: string;
+  task?: string;
+  profile?: string | null;
+  confirm_expensive_model?: boolean;
+}
+export interface ModelAssignmentResponse extends ModelOptionsResponse {
+  ok?: boolean;
+  scope?: string;
+  confirm_required?: boolean;
+  confirm_message?: string;
+}
+export async function setModel(
+  body: ModelAssignment,
+): Promise<ModelAssignmentResponse> {
+  return fetchJSON<ModelAssignmentResponse>(`/api/model/set`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
 async function buildWsAuthParam(): Promise<[string, string]> {
   if (isAuthRequired()) {
     const { ticket } = await fetchJSON<{ ticket: string; ttl_seconds: number }>(

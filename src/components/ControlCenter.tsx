@@ -21,7 +21,7 @@ const C: Record<string, Aspect> = content as Record<string, Aspect>;
 // Control Center — exposes every aspect of Hermes as a plain-language,
 // accessible card. Live data only where a verified endpoint exists;
 // otherwise a guided launch-pad that opens the right chat command.
-export function ControlCenter() {
+export function ControlCenter({ onClose }: { onClose?: () => void }) {
   const [skills, setSkills] = useState<SkillEntry[] | null>(null);
   const [providers, setProviders] = useState<ProviderInfo[] | null>(null);
   const [config, setConfig] = useState<ConfigSchema | null>(null);
@@ -50,6 +50,11 @@ export function ControlCenter() {
     <div className="control-center">
       <div className="cc-head">
         <h2>Control Center</h2>
+        {onClose && (
+          <button className="cc-close" onClick={onClose}>
+            ← Back
+          </button>
+        )}
         <p className="cc-sub">
           Every part of Hermes, explained simply. Cards marked <b>Live</b> show
           real data; <b>Guided</b> cards open a chat that sets things up for you.

@@ -6,6 +6,7 @@ import "@xterm/xterm/css/xterm.css";
 import { buildPtyWsUrl, generateChannelId, type SessionInfo } from "@/lib/hermesApi";
 import { type CockpitRepo } from "@/lib/cockpitStore";
 import { TraceView } from "./TraceView";
+import { ModelPicker } from "./ModelPicker";
 
 const REPO_CONTEXT_PREFIX = "\x1b[90m"; // bright black / muted
 
@@ -21,6 +22,7 @@ export function ChatPanel({
   const wsRef = useRef<WebSocket | null>(null);
   const termRef = useRef<Terminal | null>(null);
   const [tab, setTab] = useState<"terminal" | "trace">("terminal");
+  const [showModelPicker, setShowModelPicker] = useState(false);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -184,6 +186,13 @@ export function ChatPanel({
               >
                 Trace
               </button>
+              <button
+                className="btn-ghost"
+                onClick={() => setShowModelPicker(true)}
+                title="Switch the default model for new chats"
+              >
+                Model
+              </button>
             </>
           )}
         </div>
@@ -213,6 +222,8 @@ export function ChatPanel({
           <TraceView sessionId={session?.id ?? ""} />
         </div>
       )}
+
+      {showModelPicker && <ModelPicker onClose={() => setShowModelPicker(false)} />}
     </section>
   );
 }

@@ -23,6 +23,7 @@ export function App() {
   const [activeFolder, setActiveFolder] = useState<string>("inbox");
   const [activeSession, setActiveSession] = useState<SessionInfo | null>(null);
   const [activeRepo, setActiveRepo] = useState<CockpitRepo | null>(null);
+  const [newChat, setNewChat] = useState(false);
   const [view, setView] = useState<"organize" | "control">("organize");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [query, setQuery] = useState("");
@@ -100,7 +101,7 @@ export function App() {
         }
       />
 
-      <div className="list-pane">
+      <div className={`list-pane${view === "control" ? " hidden" : ""}`}>
         <SessionList
           folderName={folder?.name ?? "Sessions"}
           folderSubtitle={folder?.subtitle ?? ""}
@@ -108,8 +109,15 @@ export function App() {
           query={query}
           setQuery={setQuery}
           activeId={activeSession?.id}
-          onOpen={(s) => setActiveSession(s)}
-          onNewChat={() => setActiveSession(null)}
+          onOpen={(s) => {
+            setNewChat(false);
+            setActiveSession(s);
+          }}
+          onNewChat={() => {
+            setActiveSession(null);
+            setActiveRepo(null);
+            setNewChat(true);
+          }}
           onAssign={async (sid, fid) => {
             await cockpitStore.assignSession(sid, fid);
             setSessions((prev) => [...prev]);
@@ -135,7 +143,10 @@ export function App() {
 
       {activeSession && <ChatPanel session={activeSession} />}
       {activeRepo && <ChatPanel repo={activeRepo} />}
-      {view === "control" && !activeSession && !activeRepo && <ControlCenter />}
+      {newChat && !activeSession && !activeRepo && <ChatPanel session={null} />}
+      {view === "control" && !activeSession && !activeRepo && !newChat && (
+        <ControlCenter onClose={() => setView("organize")} />
+      )}
     </div>
     </ThemeProvider>
   );

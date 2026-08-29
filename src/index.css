@@ -317,6 +317,75 @@ a { color: var(--signal); }
 .onboard-preset-blurb { font-size: 11px; color: var(--muted); }
 .onboard-actions { display: flex; justify-content: space-between; gap: 10px; }
 
+/* ── Control Center: full main area ────────────────────────────────── */
+.list-pane.hidden { display: none; }
+/* When Control Center is active it takes the whole main column (no
+   session list). Force a single main area, not the 3-col chat grid. */
+.app:has(.control-center) { grid-template-columns: 248px 1fr !important; }
+.control-center {
+  grid-column: 2; overflow-y: auto; padding: 28px 32px; height: 100%;
+  background: var(--paper);
+}
+.cc-head { display: flex; align-items: center; gap: 12px; }
+.cc-head .cc-close {
+  margin-left: auto; background: var(--chip); border: 1px solid var(--line);
+  color: var(--muted); border-radius: var(--radius-sm); padding: 6px 12px;
+  font-size: 12px; cursor: pointer;
+}
+.cc-head .cc-close:hover { border-color: var(--signal); color: var(--ink); }
+.cc-head h2 { margin: 0; font-size: 22px; }
+.cc-sub { margin: 6px 0 22px; color: var(--muted); font-size: 13px; max-width: 80ch; }
+.cc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+
+/* ── Model picker modal ────────────────────────────────────────────── */
+.mp-overlay {
+  position: fixed; inset: 0; z-index: 100; display: grid; place-items: center;
+  background: rgba(22, 21, 19, 0.55); backdrop-filter: blur(3px); padding: 20px;
+}
+.mp-card {
+  background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius);
+  width: 100%; max-width: 720px; max-height: 82vh; display: flex; flex-direction: column;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.3); overflow: hidden;
+}
+.mp-head { position: relative; padding: 18px 20px 12px; border-bottom: 1px solid var(--line); }
+.mp-head h2 { margin: 0; font-size: 18px; }
+.mp-current { margin: 4px 0 0; font-size: 12px; color: var(--muted); font-family: var(--font-mono); }
+.mp-x {
+  position: absolute; right: 14px; top: 14px; background: none; border: none;
+  color: var(--muted); font-size: 15px; cursor: pointer;
+}
+.mp-x:hover { color: var(--ink); }
+.mp-search { padding: 12px 20px; border-bottom: 1px solid var(--line); }
+.mp-search input {
+  width: 100%; background: var(--surface); border: 1px solid var(--line);
+  border-radius: var(--radius-sm); color: var(--ink); padding: 9px 11px;
+  font-size: 13px; outline: none; font-family: var(--font-display);
+}
+.mp-search input:focus { border-color: var(--signal); }
+.mp-loading, .mp-error, .mp-empty {
+  padding: 24px; text-align: center; color: var(--muted); font-size: 13px;
+}
+.mp-error { color: var(--signal); }
+.mp-cols { display: grid; grid-template-columns: 220px 1fr; flex: 1; min-height: 0; }
+.mp-providers, .mp-models { overflow-y: auto; padding: 8px; }
+.mp-providers { border-right: 1px solid var(--line); }
+.mp-prov, .mp-model {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius-sm);
+  color: var(--ink); padding: 9px 11px; margin-bottom: 5px; font-size: 13px; cursor: pointer;
+  text-align: left;
+}
+.mp-prov:hover, .mp-model:hover { border-color: var(--signal); }
+.mp-prov.active, .mp-model.active { background: var(--surface-2); border-color: var(--signal); }
+.mp-count, .mp-now { font-size: 10px; color: var(--muted); border: 1px solid var(--line); border-radius: 20px; padding: 1px 7px; }
+.mp-now { color: var(--ok); border-color: var(--ok); }
+.mp-foot {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 12px 20px; border-top: 1px solid var(--line); flex-wrap: wrap;
+}
+.mp-note { font-size: 11px; color: var(--muted); }
+.mp-actions { display: flex; gap: 8px; margin-left: auto; }
+
 /* ── Session list: source filter + badges ───────────────────────────── */
 .source-filter {
   display: flex; flex-wrap: wrap; gap: 4px; padding: 0 12px 8px;
