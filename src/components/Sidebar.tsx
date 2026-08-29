@@ -38,6 +38,8 @@ const PAGES: NavItem[] = [
 export function Sidebar({
   activeFolder,
   page,
+  mobileOpen,
+  onCloseMobile,
   onPage,
   onSelect,
   onOpenRepo,
@@ -45,6 +47,8 @@ export function Sidebar({
 }: {
   activeFolder: string;
   page: string;
+  mobileOpen: boolean;
+  onCloseMobile: () => void;
   onPage: (p: string) => void;
   onSelect: (id: string) => void;
   onOpenRepo: (repo: import("@/lib/cockpitStore").CockpitRepo) => void;
@@ -66,7 +70,13 @@ export function Sidebar({
   let lastGroup = "";
 
   return (
-    <aside className="sidebar">
+    <>
+      <div
+        className={`sidebar-backdrop${mobileOpen ? " show" : ""}`}
+        onClick={onCloseMobile}
+        aria-hidden
+      />
+      <aside className={`sidebar${mobileOpen ? " mobile-open" : ""}`}>
       <div className="sidebar-head">
         <div className="brand">
           <div className="brand-mark">J</div>
@@ -155,5 +165,6 @@ export function Sidebar({
 
       <Repositories onOpenRepo={onOpenRepo} />
     </aside>
+    </>
   );
 }

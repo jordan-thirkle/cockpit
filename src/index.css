@@ -148,6 +148,60 @@ a { color: var(--signal); }
 .app { display: grid; grid-template-columns: 248px 1fr; height: 100vh; overflow: hidden; }
 .app.with-chat { grid-template-columns: 248px 320px 1fr; }
 
+/* Mobile top-bar hamburger — hidden on desktop, shown on small screens. */
+.topbar-burger {
+  display: none;
+  position: fixed; top: 10px; left: 10px; z-index: 60;
+  width: 40px; height: 40px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--line); color: var(--ink);
+  font-size: 18px; line-height: 1; cursor: pointer;
+}
+.sidebar-backdrop { display: none; }
+
+/* ── Responsive: tablet + phone ───────────────────────────────────────── */
+@media (max-width: 1024px) {
+  /* Sidebar becomes an off-canvas drawer. */
+  .app, .app.with-chat { grid-template-columns: 1fr; }
+  .sidebar {
+    position: fixed; top: 0; left: 0; bottom: 0; width: 280px; max-width: 84vw;
+    z-index: 70; transform: translateX(-100%); transition: transform .22s ease;
+    box-shadow: 0 0 60px rgba(0,0,0,.35);
+  }
+  .sidebar.mobile-open { transform: translateX(0); }
+  .sidebar-backdrop {
+    display: block; position: fixed; inset: 0; z-index: 65;
+    background: rgba(0,0,0,.45); opacity: 0; pointer-events: none; transition: opacity .22s ease;
+  }
+  .sidebar-backdrop.show { opacity: 1; pointer-events: auto; }
+  .topbar-burger { display: grid; place-items: center; }
+  /* Push content clear of the floating burger. */
+  .list-pane, .chat-pane, .page, .control-center, .viewer-stage { padding-top: 8px; }
+  .list-head, .page-head, .chat-head { padding-left: 56px; }
+}
+
+@media (max-width: 640px) {
+  /* Phone: chat takes over the whole screen when open. */
+  .app.with-chat { grid-template-columns: 1fr; }
+  .chat-pane { position: fixed; inset: 0; z-index: 80; background: var(--bg); }
+  .list-pane { border-right: none; }
+  .term-wrap { height: calc(100vh - 110px); }
+  /* Stack workspace/memory panels under the session list. */
+  .organize-stack { display: block; }
+  /* Keep modals/dialogs from overflowing the viewport. */
+  .mp-card, .onboard-card, .cc-grid > * { max-width: 100% !important; }
+  .page-head h1 { font-size: 19px; }
+  /* Vendored Hermes tables: scroll horizontally instead of breaking layout. */
+  .table-wrap, table { width: 100%; }
+  .page table, .card table { display: block; overflow-x: auto; }
+}
+
+/* Global responsive safety for vendored content + cards. */
+.card-grid { grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+@media (max-width: 520px) {
+  .card-grid { grid-template-columns: 1fr; }
+  .cc-grid { grid-template-columns: 1fr !important; }
+}
+
 /* ── Sidebar ──────────────────────────────────────────────────────────── */
 .sidebar {
   background: var(--surface);

@@ -58,6 +58,7 @@ export function App() {
   const [page, setPage] = useState<string>("organize");
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [query, setQuery] = useState("");
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // ── auth gate ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -113,15 +114,31 @@ export function App() {
   return (
     <ThemeProvider>
     {showOnboarding && <Onboarding onDone={() => setShowOnboarding(false)} />}
-    <div className={`app${activeSession ? " with-chat" : ""}`}>
+    <div className={`app${activeSession || newChat || activeRepo ? " with-chat" : ""}`}>
+      <button
+        className="topbar-burger"
+        aria-label="Toggle navigation"
+        onClick={() => setMobileNavOpen((v) => !v)}
+      >
+        ☰
+      </button>
       <Sidebar
         activeFolder={activeFolder}
         page={page}
-        onPage={setPage}
-        onSelect={setActiveFolder}
+        mobileOpen={mobileNavOpen}
+        onCloseMobile={() => setMobileNavOpen(false)}
+        onPage={(p) => {
+          setPage(p);
+          setMobileNavOpen(false);
+        }}
+        onSelect={(id) => {
+          setActiveFolder(id);
+          setMobileNavOpen(false);
+        }}
         onOpenRepo={(r) => {
           setActiveRepo(r);
           setActiveSession(null);
+          setMobileNavOpen(false);
         }}
         sessionCount={(fid) =>
           fid === "inbox"
