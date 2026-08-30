@@ -25,3 +25,11 @@ tsconfig.tsbuildinfo
 
 # Cockpit runtime metadata is stored server-side in HERMES_HOME/data/cockpit,
 # never committed.
+
+# Local audit/diagnostic tooling (Playwright probes, screenshots) — dev-only,
+# must NOT be swept into feature/fix commits.
+audit-panels.mjs
+diag.mjs
+diag2.mjs
+audit-shots/
+screenshots/
