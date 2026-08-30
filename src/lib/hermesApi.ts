@@ -128,13 +128,17 @@ export async function getAuthMe(): Promise<{ user_id?: string } | null> {
 }
 
 // ── Sessions ────────────────────────────────────────────────────────────
+// Backend caps the /api/sessions LIST limit at 100 (422 if exceeded). Clamp
+// here so callers can't accidentally 422 the Organize / 3D Graph panels.
+const SESSIONS_LIST_MAX = 100;
 export function getSessions(
-  limit = 200,
+  limit = SESSIONS_LIST_MAX,
   offset = 0,
   order: "created" | "recent" = "recent",
 ): Promise<PaginatedSessions> {
+  const safeLimit = Math.max(1, Math.min(limit, SESSIONS_LIST_MAX));
   return fetchJSON<PaginatedSessions>(
-    `/api/sessions?limit=${limit}&offset=${offset}&order=${order}`,
+    `/api/sessions?limit=${safeLimit}&offset=${offset}&order=${order}`,
   );
 }
 
@@ -366,8 +370,13 @@ export async function writeJsonFile(name: string, data: unknown): Promise<void> 
 //    unauthenticated, i.e. the route EXISTS on this backend — so these are
 //    real, endpoint-backed pages, not faked UI). ──────────────────────────
 export const getStatus = () => fetchJSON<any>("/api/status");
-export const getGateway = () => fetchJSON<any>("/api/gateway");
-export const getGatewayStatus = () => fetchJSON<any>("/api/gateway/status");
+// NOTE: this dashboard build exposes NO standalone GET /api/gateway or
+// /api/gateway/status route (only POST restart/drain/start/stop). The gateway
+// state lives inside /api/status (gateway_running, gateway_state, components.
+// gateway, ...). Point both reads there rather than 404-ing — never invent a
+// backend endpoint (AGENTS.md ONE rule).
+export const getGateway = () => fetchJSON<any>("/api/status");
+export const getGatewayStatus = () => fetchJSON<any>("/api/status");
 export const getAnalytics = () => fetchJSON<any>("/api/analytics");
 export const getAnalyticsUsage = (days = 30) =>
   fetchJSON<any>(`/api/analytics/usage?days=${days}`);

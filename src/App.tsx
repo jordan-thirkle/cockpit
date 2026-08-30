@@ -82,7 +82,7 @@ export function App() {
 
   // ── load store + sessions once authed ──────────────────────────────────
   const refreshSessions = async () => {
-    const data = await getSessions(500, 0, "recent");
+    const data = await getSessions(100, 0, "recent");
     setSessions(data.sessions);
   };
   useEffect(() => {

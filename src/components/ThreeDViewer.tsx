@@ -38,7 +38,7 @@ export function ThreeDViewer() {
   const rafRef = useRef<number>(0);
 
   useEffect(() => {
-    getSessions(200, 0, "recent")
+    getSessions(100, 0, "recent")
       .then((d) => setSessions(d.sessions ?? []))
       .catch((e) => setError(e?.message ?? String(e)));
   }, []);
