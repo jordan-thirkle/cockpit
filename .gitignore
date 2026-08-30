@@ -33,3 +33,6 @@ diag.mjs
 diag2.mjs
 audit-shots/
 screenshots/
+
+# temp audit helper
+verify-tiles.mjs
