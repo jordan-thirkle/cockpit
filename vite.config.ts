@@ -17,9 +17,28 @@ export default defineConfig({
     emptyOutDir: true,
     rollupOptions: {
       output: {
-        // Deterministic-ish chunking; keep the main entry small.
-        manualChunks: {
-          xterm: ["@xterm/xterm", "@xterm/addon-fit", "@xterm/addon-web-links"],
+        // Keep the main entry small by splitting the heavy, rarely-changing vendor
+        // libs into their own cacheable chunks. We use a guarded function (not the
+        // object form) because the object form's package-name matcher fails to
+        // capture the `react-dom/client` subpath — react-dom was ending up trapped
+        // in the entry chunk. This returns exactly 3 named groups (xterm, ui, react)
+        // and lets everything else fall through to the default entry chunk, so we
+        // don't fragment into dozens of tiny files.
+        //   - react-router is the installed dep (react-router-dom is NOT).
+        //   - @nous-research/ui is the vendored UI kit; its only `three` usage is in
+        //     components the app never transitively imports, so three tree-shakes
+        //     out entirely — no point giving it its own chunk.
+        manualChunks(id) {
+          if (!id.includes("node_modules")) return;
+          if (id.includes("@xterm")) return "xterm";
+          if (id.includes("@nous-research/ui")) return "ui";
+          if (
+            id.includes("react-router") ||
+            id.includes("/react-dom/") ||
+            id.includes("/react/")
+          ) {
+            return "react";
+          }
         },
       },
     },
