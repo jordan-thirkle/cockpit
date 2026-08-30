@@ -10,10 +10,17 @@ export interface ApiPageProps {
   redact?: (key: string) => boolean;
   /** Bump to force a refetch (e.g. after an action). */
   reloadKey?: unknown;
+  /**
+   * Shown (calm, not error-red) when the endpoint returns 404 — i.e. the
+   * backing resource/plugin simply isn't present in this Hermes build.
+   * Lets optional-plugin panels degrade gracefully instead of screaming
+   * "Could not load" (per AGENTS.md: never invent the endpoint to paper over it).
+   */
+  notAvailableMessage?: string;
 }
 
-export function ApiPage({ title, subtitle, fetcher, render, redact, reloadKey }: ApiPageProps) {
-  const [state, setState] = useState<"loading" | "ok" | "err">("loading");
+export function ApiPage({ title, subtitle, fetcher, render, redact, reloadKey, notAvailableMessage }: ApiPageProps) {
+  const [state, setState] = useState<"loading" | "ok" | "err" | "na">("loading");
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string>("");
   // Hold the latest fetcher in a ref so a new function identity (e.g. an inline
@@ -33,8 +40,17 @@ export function ApiPage({ title, subtitle, fetcher, render, redact, reloadKey }:
       })
       .catch((e) => {
         if (!alive) return;
-        setError(e?.message ?? String(e));
-        setState("err");
+        const msg = e?.message ?? String(e);
+        // A 404 means the backing resource/plugin isn't present in this build —
+        // render a calm "not available" state, not an error. (AGENTS.md: don't
+        // invent the endpoint to paper over it; just degrade gracefully.)
+        if (/404/.test(msg)) {
+          setError(msg);
+          setState("na");
+        } else {
+          setError(msg);
+          setState("err");
+        }
       });
     return () => {
       alive = false;
@@ -53,6 +69,11 @@ export function ApiPage({ title, subtitle, fetcher, render, redact, reloadKey }:
           Could not load. {error.includes("401") || error.includes("unauthenticated")
             ? "Sign in again or check your session."
             : error}
+        </div>
+      )}
+      {state === "na" && (
+        <div className="page-state">
+          {notAvailableMessage ?? "Not available in this Hermes build."}
         </div>
       )}
       {state === "ok" &&

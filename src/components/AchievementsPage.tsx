@@ -7,6 +7,7 @@ export const AchievementsPage = () => (
     title="Achievements"
     subtitle="Your Hermes milestones (live from hermes-achievements plugin)"
     fetcher={getAchievements}
+    notAvailableMessage="Achievements plugin (hermes-achievements) isn't installed in this Hermes build — enable it to track milestones."
     render={(d: any) => {
       const list = d?.achievements ?? d?.state?.achievements ?? (Array.isArray(d) ? d : []);
       const items = Array.isArray(list) ? list : [];
