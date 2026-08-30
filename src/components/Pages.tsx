@@ -1,3 +1,4 @@
+import { type ReactNode } from "react";
 import { ApiPage, redactSecrets } from "./Page";
 import {
   getStatus,
@@ -29,11 +30,218 @@ import {
 export const StatusPage = () => (
   <ApiPage title="Status" subtitle="Hermes runtime + gateway health" fetcher={getStatus} redact={redactSecrets} />
 );
+// ── Status tiles (shared by the two Gateway-derived panels) ──
+type Tone = "ok" | "warn" | "err" | "muted" | "signal";
+const TONE_COLOR: Record<Tone, string> = {
+  ok: "var(--ok)",
+  warn: "var(--warn)",
+  err: "var(--danger)",
+  muted: "var(--muted)",
+  signal: "var(--signal)",
+};
+
+// Partial shape of the /api/status payload the Gateway-derived panels consume.
+// Typed so a backend field rename surfaces at compile time (not as a silent
+// "—"/unknown tile like the original /api/gateway 404 did).
+interface StatusPayload {
+  gateway_running?: boolean;
+  gateway_state?: string;
+  gateway_busy?: boolean;
+  gateway_drainable?: boolean;
+  gateway_mode?: string;
+  gateway_exit_reason?: string;
+  restart_drain_timeout?: number;
+  components?: { gateway?: { status?: string; state?: string } };
+  version?: string;
+  release_date?: string;
+  config_version?: number;
+  latest_config_version?: number;
+  active_sessions?: number;
+  profiles?: string[];
+  overall?: string;
+}
+
+function StatusTile({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: ReactNode;
+  tone?: Tone;
+}) {
+  return (
+    <div className="info-card">
+      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        {tone && (
+          <span
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: "50%",
+              background: TONE_COLOR[tone],
+              flex: "0 0 auto",
+            }}
+          />
+        )}
+        <span className="info-card-title">{label}</span>
+      </div>
+      <div
+        className="info-card-sub"
+        style={{
+          fontSize: 13,
+          marginTop: 8,
+          color: tone ? TONE_COLOR[tone] : undefined,
+          fontWeight: 600,
+          minHeight: "auto",
+        }}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
+// Map a known status/state string → tile tone.
+const STATUS_TONE: Record<string, Tone> = {
+  ok: "ok",
+  running: "ok",
+  ready: "ok",
+  valid: "ok",
+  healthy: "ok",
+  connected: "ok",
+  live: "ok",
+  degraded: "warn",
+  warn: "warn",
+  draining: "warn",
+  none: "muted",
+  stopped: "err",
+  error: "err",
+  dead: "err",
+  down: "err",
+  failed: "err",
+  unhealthy: "err",
+};
+const toneOf = (s: unknown): Tone | undefined =>
+  typeof s === "string" ? STATUS_TONE[s.toLowerCase()] : undefined;
+
+// Gateway: focused connection/health view (gateway_* + components.gateway).
 export const GatewayPage = () => (
-  <ApiPage title="Gateway" subtitle="Messaging gateway connections" fetcher={getGateway} redact={redactSecrets} />
+  <ApiPage
+    title="Gateway"
+    subtitle="Messaging gateway connection + health"
+    fetcher={getGateway}
+    redact={redactSecrets}
+    render={(d: any) => {
+      const s = d as StatusPayload;
+      const gw = s.components?.gateway ?? {};
+      const drain = s.restart_drain_timeout;
+      return (
+        <div className="card-grid">
+          <StatusTile
+            label="Running"
+            value={s.gateway_running ? "yes" : "no"}
+            tone={s.gateway_running ? "ok" : "err"}
+          />
+          <StatusTile
+            label="State"
+            value={s.gateway_state ?? "unknown"}
+            tone={toneOf(s.gateway_state)}
+          />
+          <StatusTile
+            label="Busy"
+            value={s.gateway_busy ? "busy" : "idle"}
+            tone={s.gateway_busy ? "warn" : "ok"}
+          />
+          <StatusTile
+            label="Drainable"
+            value={s.gateway_drainable ? "yes" : "no"}
+            tone={s.gateway_drainable ? "warn" : "muted"}
+          />
+          <StatusTile
+            label="Mode"
+            value={s.gateway_mode ?? "unknown"}
+            tone={s.gateway_mode && s.gateway_mode !== "none" ? "signal" : "muted"}
+          />
+          <StatusTile
+            label="Restart drain timeout"
+            value={typeof drain === "number" ? `${drain}s` : "—"}
+            tone="muted"
+          />
+          <StatusTile
+            label="Exit reason"
+            value={s.gateway_exit_reason ?? "—"}
+            tone={s.gateway_exit_reason ? "warn" : "muted"}
+          />
+          <StatusTile
+            label="Component health"
+            value={gw.status ?? "unknown"}
+            tone={toneOf(gw.status)}
+          />
+          <StatusTile
+            label="Component state"
+            value={gw.state ?? "unknown"}
+            tone={toneOf(gw.state)}
+          />
+        </div>
+      );
+    }}
+  />
 );
+
+// Gateway Status: broader runtime + delivery status (non-gateway runtime fields,
+// with gateway_running/gateway_state repeated as a quick indicator).
 export const GatewayStatusPage = () => (
-  <ApiPage title="Gateway Status" fetcher={getGatewayStatus} redact={redactSecrets} />
+  <ApiPage
+    title="Gateway Status"
+    subtitle="Hermes runtime + delivery status"
+    fetcher={getGatewayStatus}
+    redact={redactSecrets}
+    render={(d: any) => {
+      const s = d as StatusPayload;
+      const cfgUpToDate = s.config_version === s.latest_config_version;
+      return (
+        <div className="card-grid">
+          <StatusTile label="Version" value={s.version ?? "—"} tone="signal" />
+          <StatusTile label="Release date" value={s.release_date ?? "—"} tone="muted" />
+          <StatusTile
+            label="Config version"
+            value={
+              s.config_version != null
+                ? `${s.config_version}${cfgUpToDate ? " (latest)" : ` / latest ${s.latest_config_version}`}`
+                : "—"
+            }
+            tone={cfgUpToDate ? "ok" : "warn"}
+          />
+          <StatusTile
+            label="Active sessions"
+            value={typeof s.active_sessions === "number" ? s.active_sessions : "—"}
+            tone="signal"
+          />
+          <StatusTile
+            label="Profiles"
+            value={Array.isArray(s.profiles) ? s.profiles.join(", ") : "—"}
+            tone="muted"
+          />
+          <StatusTile
+            label="Gateway"
+            value={s.gateway_running ? "running" : "stopped"}
+            tone={s.gateway_running ? "ok" : "err"}
+          />
+          <StatusTile
+            label="Gateway state"
+            value={s.gateway_state ?? "unknown"}
+            tone={toneOf(s.gateway_state)}
+          />
+          <StatusTile
+            label="Overall"
+            value={s.overall ?? "unknown"}
+            tone={toneOf(s.overall)}
+          />
+        </div>
+      );
+    }}
+  />
 );
 export const ConfigPage = () => (
   <ApiPage title="Config" subtitle="Resolved configuration" fetcher={getConfig} redact={redactSecrets} />
