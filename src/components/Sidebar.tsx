@@ -57,6 +57,17 @@ export function Sidebar({
   const folders = cockpitStore.getFolders();
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
+  // 27 panels is too many to scan by eye — a local filter (labels only, no
+  // renaming/reordering of the nav itself) makes the sidebar navigable.
+  const [navQuery, setNavQuery] = useState("");
+  const navNeedle = navQuery.trim().toLowerCase();
+  const visiblePages = navNeedle
+    ? PAGES.filter(
+        (p) =>
+          p.label.toLowerCase().includes(navNeedle) ||
+          p.group.toLowerCase().includes(navNeedle),
+      )
+    : PAGES;
 
   const submitNew = async () => {
     const n = name.trim();
@@ -91,7 +102,27 @@ export function Sidebar({
       </div>
 
       <div className="sidebar-scroll">
-        {PAGES.map((it) => {
+        <div className="nav-filter">
+          <input
+            type="search"
+            value={navQuery}
+            placeholder="Jump to panel…"
+            aria-label="Filter panels"
+            onChange={(e) => setNavQuery(e.target.value)}
+            onKeyDown={(e) => {
+              // Enter opens the single remaining match — keyboard-first nav.
+              if (e.key === "Enter" && visiblePages.length > 0) {
+                onPage(visiblePages[0].id);
+                setNavQuery("");
+              }
+              if (e.key === "Escape") setNavQuery("");
+            }}
+          />
+        </div>
+        {visiblePages.length === 0 && (
+          <div className="nav-empty">No panel matches “{navQuery}”</div>
+        )}
+        {visiblePages.map((it) => {
           const showGroup = it.group !== lastGroup;
           lastGroup = it.group;
           return (

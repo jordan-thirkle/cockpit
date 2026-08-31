@@ -72,7 +72,7 @@ export async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> 
   });
   if (!res.ok) {
     if (res.status === 401) throw new CockpitAuthError(await safeText(res));
-    throw new Error(`${res.status}: ${await safeText(res)}`);
+    throw new Error(`${res.status} ${url}: ${await safeText(res)}`);
   }
   return res.json() as Promise<T>;
 }
@@ -111,17 +111,10 @@ export async function login(
   return res.json();
 }
 
-export async function logout(): Promise<void> {
-  await fetch(`${BASE}/auth/logout`, { method: "POST", credentials: "include" });
-  window.location.assign("/login");
-}
-
 export async function getAuthMe(): Promise<{ user_id?: string } | null> {
   if (!isAuthRequired()) return { user_id: "local" };
   try {
-    return await fetchJSON<{ user_id?: string }>("/api/auth/me", {
-      // allowUnauthorized: a 401 here just means not logged in
-    } as RequestInit);
+    return await fetchJSON<{ user_id?: string }>("/api/auth/me");
   } catch {
     return null;
   }
@@ -164,22 +157,6 @@ export function archiveSession(id: string, archive = true): Promise<{ ok: boolea
 
 export function exportSession(id: string): Promise<{ markdown?: string; [k: string]: unknown }> {
   return fetchJSON(`/api/sessions/${encodeURIComponent(id)}/export`);
-}
-
-export function pruneEmptySessions(): Promise<{ ok: boolean; pruned?: number }> {
-  return fetchJSON(`/api/sessions/prune`, { method: "POST" });
-}
-
-export function bulkDeleteSessions(ids: string[]): Promise<{ ok: boolean }> {
-  return fetchJSON(`/api/sessions/bulk-delete`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ids }),
-  });
-}
-
-export function emptySessionCount(): Promise<{ count: number }> {
-  return fetchJSON(`/api/sessions/empty/count`);
 }
 
 // ── Memory status (feature #2 from RESEARCH.md) ──
@@ -296,7 +273,7 @@ export async function buildWsAuthParam(): Promise<[string, string]> {
   if (isAuthRequired()) {
     const { ticket } = await fetchJSON<{ ticket: string; ttl_seconds: number }>(
       "/api/auth/ws-ticket",
-      { method: "POST" } as RequestInit,
+      { method: "POST" },
     );
     return ["ticket", ticket];
   }
@@ -387,27 +364,88 @@ export const getToolsets = () => fetchJSON<any>("/api/tools/toolsets");
 export const getConfig = () => fetchJSON<any>("/api/config");
 export const getConfigDefaults = () => fetchJSON<any>("/api/config/defaults");
 export const getEnv = () => fetchJSON<any>("/api/env");
-export const getMcp = () => fetchJSON<any>("/api/mcp");
 export const getMcpServers = () => fetchJSON<any>("/api/mcp/servers");
 export const getMessagingPlatforms = () =>
   fetchJSON<any>("/api/messaging/platforms");
 export const getModelInfo = () => fetchJSON<any>("/api/model/info");
 export const getPairing = () => fetchJSON<any>("/api/pairing");
-export const getCron = () => fetchJSON<any>("/api/cron");
 export const getCronJobs = () => fetchJSON<any>("/api/cron/jobs");
 export const getWebhooks = () => fetchJSON<any>("/api/webhooks");
-export const getWebhooksList = () => fetchJSON<any>("/api/webhooks");
-export const getFiles = (path = "/") =>
-  fetchJSON<any>(`/api/files?path=${encodeURIComponent(path)}`);
+export const getFiles = () =>
+  fetchJSON<any>("/api/fs/list?path=.");
 export const getLogs = (n = 200) =>
   fetchJSON<any>(`/api/logs?n=${n}`);
 export const getPlugins = () => fetchJSON<any>("/api/dashboard/plugins");
-export const getPluginsList = () => fetchJSON<any>("/api/dashboard/plugins");
-export const getDocs = () => fetchJSON<any>("/api/docs");
 export const getProfiles = () => fetchJSON<any>("/api/profiles");
-export const getProfileBuilder = () => fetchJSON<any>("/api/profiles/active");
 export const getAchievements = () =>
   fetchJSON<any>("/api/dashboard/plugins/hermes-achievements/state");
 export const getSystem = () => fetchJSON<any>("/api/system/stats");
 export const getMemoryProviders = () =>
   fetchJSON<any>("/api/memory");
+
+// ── Docs ──────────────────────────────────────────────────────────────────────
+// Hermes ships a real docs tree under <HERMES_HOME>/docs/ (ADRs, design docs,
+// RFCS, etc.). It is exposed through the managed-files API already used by the
+// Files panel:
+//   GET /api/fs/list?path=docs         → directory listing
+//   GET /api/fs/read-text?path=docs/X  → file content (content-type aware)
+//
+// No dedicated /api/docs route exists on any backend, so we ride the existing
+// managed-files surface instead of inventing one (AGENTS.md ONE rule).
+//
+// Response shapes (from the real backend, verified live):
+//   list:   { entries: [{ name, path, isDirectory, size?, mtime? }], ... }
+//   read:   { text: string, language: string, byteSize: number, ... }
+export interface DocEntry {
+  name: string;
+  path: string;       // full filesystem path (for read-text)
+  isDirectory: boolean;
+  size?: number | null;
+  mtime?: number | null;
+  /** Relative path used as the item key + click target (e.g. "ADR.md",
+   *  "rfcs/design-doc.md"). */
+  rel: string;
+}
+
+export interface DocFileContent {
+  text: string;
+  language: string;
+  byteSize: number;
+  /** True when the backend reported the file as binary (e.g. a PDF). */
+  binary: boolean;
+}
+
+/** List the top-level docs tree. Returns folders + markdown files. */
+export async function getDocsTree(): Promise<DocEntry[]> {
+  const r = await fetchJSON<{ entries?: Array<{ name: string; path: string; isDirectory: boolean; size?: number | null; mtime?: number | null }> }>(
+    "/api/fs/list?path=docs",
+  );
+  const entries = r.entries ?? [];
+  return entries.map((e) => ({
+    ...e,
+    rel: e.name,
+  }));
+}
+
+/** Read a single docs file by its relative path inside docs/. */
+export async function getDocFile(rel: string): Promise<DocFileContent | null> {
+  try {
+    const r = await fetchJSON<{ text?: string; language?: string; byteSize?: number; binary?: boolean }>(
+      `/api/fs/read-text?path=docs/${encodeURIComponent(rel)}`,
+    );
+    if (!r.text) return null;
+    return {
+      text: r.text,
+      language: r.language ?? "markdown",
+      byteSize: r.byteSize ?? 0,
+      binary: r.binary ?? false,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Legacy alias kept for any panel still importing getDocs as a single
+ *  fetcher that returns the tree. New docs-aware panels call getDocsTree /
+ *  getDocFile directly. */
+export const getDocs = () => getDocsTree();

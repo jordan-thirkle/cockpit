@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
+import { CopyButton, DataView } from "./ui";
 
 export interface ApiPageProps {
   title: string;
@@ -17,9 +18,31 @@ export interface ApiPageProps {
    * "Could not load" (per AGENTS.md: never invent the endpoint to paper over it).
    */
   notAvailableMessage?: string;
+  /**
+   * Noun used by the default view's count chip + filter placeholder
+   * ("12 entries", "Filter entries…").
+   */
+  unit?: string;
+  /** Empty-state copy for the default view when the payload has no content. */
+  emptyTitle?: string;
+  emptyHint?: ReactNode;
+  /** Open the default view on the raw-JSON tab (log-ish payloads). */
+  rawFirst?: boolean;
 }
 
-export function ApiPage({ title, subtitle, fetcher, render, redact, reloadKey, notAvailableMessage }: ApiPageProps) {
+export function ApiPage({
+  title,
+  subtitle,
+  fetcher,
+  render,
+  redact,
+  reloadKey,
+  notAvailableMessage,
+  unit,
+  emptyTitle,
+  emptyHint,
+  rawFirst,
+}: ApiPageProps) {
   const [state, setState] = useState<"loading" | "ok" | "err" | "na">("loading");
   const [data, setData] = useState<any>(null);
   const [error, setError] = useState<string>("");
@@ -60,10 +83,25 @@ export function ApiPage({ title, subtitle, fetcher, render, redact, reloadKey, n
   return (
     <div className="page">
       <header className="page-head">
-        <h1>{title}</h1>
-        {subtitle && <p className="page-sub">{subtitle}</p>}
+        <div className="page-head-row">
+          <div>
+            <h1>{title}</h1>
+            {subtitle && <p className="page-sub">{subtitle}</p>}
+          </div>
+          {/* Custom-rendered panels get a copy affordance too — the default
+              DataView already ships its own toolbar copy button. */}
+          {state === "ok" && render && (
+            <div className="page-head-actions">
+              <CopyButton value={filterKeys(data, redact)} />
+            </div>
+          )}
+        </div>
       </header>
-      {state === "loading" && <div className="page-state">Loading…</div>}
+      {state === "loading" && (
+        <div className="page-state" role="status">
+          <span className="spinner" aria-hidden /> Loading…
+        </div>
+      )}
       {state === "err" && (
         <div className="page-state err">
           Could not load. {error.includes("401") || error.includes("unauthenticated")
@@ -80,9 +118,13 @@ export function ApiPage({ title, subtitle, fetcher, render, redact, reloadKey, n
         (render ? (
           render(data)
         ) : (
-          <pre className="json-view">
-            {JSON.stringify(filterKeys(data, redact), null, 2)}
-          </pre>
+          <DataView
+            data={filterKeys(data, redact)}
+            unit={unit ?? "entries"}
+            emptyTitle={emptyTitle ?? "Nothing here yet"}
+            emptyHint={emptyHint ?? "This endpoint responded, but returned no content."}
+            rawFirst={rawFirst}
+          />
         ))}
     </div>
   );

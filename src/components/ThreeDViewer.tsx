@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { getSessions, type SessionInfo } from "@/lib/hermesApi";
+import { EmptyState } from "./ui";
 
 // Cockpit-original 3D viewer: a rotating CSS3D graph of your real Hermes
 // sessions. Hermes's own dashboard ships NO 3D viewer, so this is "more than
@@ -33,6 +34,8 @@ function fibonacciSphere(n: number): Array<[number, number, number]> {
 export function ThreeDViewer() {
   const [sessions, setSessions] = useState<SessionInfo[]>([]);
   const [error, setError] = useState<string>("");
+  const [loading, setLoading] = useState(true);
+  const [spin, setSpin] = useState(true);
   const sceneRef = useRef<HTMLDivElement>(null);
   const rotRef = useRef({ x: -12, y: 0 });
   const rafRef = useRef<number>(0);
@@ -40,7 +43,8 @@ export function ThreeDViewer() {
   useEffect(() => {
     getSessions(100, 0, "recent")
       .then((d) => setSessions(d.sessions ?? []))
-      .catch((e) => setError(e?.message ?? String(e)));
+      .catch((e) => setError(e?.message ?? String(e)))
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
@@ -48,7 +52,7 @@ export function ThreeDViewer() {
     const tick = (now: number) => {
       const dt = (now - last) / 1000;
       last = now;
-      rotRef.current.y += dt * 12; // deg/sec
+      if (spin) rotRef.current.y += dt * 12; // deg/sec
       const s = sceneRef.current;
       if (s) {
         const { x, y } = rotRef.current;
@@ -58,24 +62,66 @@ export function ThreeDViewer() {
     };
     rafRef.current = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafRef.current);
-  }, [sessions]);
+  }, [sessions, spin]);
 
   const pts = fibonacciSphere(Math.max(1, sessions.length));
   const maxMsgs = Math.max(1, ...sessions.map((s) => s.message_count ?? 0));
+  // Only legend the sources actually present, with counts — a legend of ten
+  // colours where eight never appear is noise, not information.
+  const presentSources = Object.entries(
+    sessions.reduce<Record<string, number>>((acc, s) => {
+      const k = s.source || "unknown";
+      acc[k] = (acc[k] ?? 0) + 1;
+      return acc;
+    }, {}),
+  ).sort((a, b) => b[1] - a[1]);
 
   return (
     <div className="page">
       <header className="page-head">
-        <h1>3D Session Graph</h1>
-        <p className="page-sub">
-          Cockpit-original view of your real Hermes sessions — rotating in 3D,
-          sized by message count, colored by source. (Hermes's own dashboard
-          has no 3D viewer.)
-        </p>
+        <div className="page-head-row">
+          <div>
+            <h1>3D Session Graph</h1>
+            <p className="page-sub">
+              Cockpit-original view of your real Hermes sessions — rotating in 3D,
+              sized by message count, colored by source. (Hermes's own dashboard
+              has no 3D viewer.)
+            </p>
+          </div>
+          <div className="page-head-actions">
+            {sessions.length > 0 && (
+              <>
+                <span className="dv-count">{sessions.length} sessions</span>
+                <button
+                  type="button"
+                  className="btn-ghost"
+                  aria-pressed={!spin}
+                  onClick={() => setSpin((s) => !s)}
+                  title={spin ? "Pause rotation" : "Resume rotation"}
+                >
+                  {spin ? "⏸ Pause" : "▶ Spin"}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
       </header>
 
       {error && <div className="page-state err">{error.includes("401") ? "Sign in to view." : error}</div>}
+      {loading && !error && (
+        <div className="page-state" role="status">
+          <span className="spinner" aria-hidden /> Loading sessions…
+        </div>
+      )}
+      {!loading && !error && sessions.length === 0 && (
+        <EmptyState
+          title="No sessions to plot"
+          hint="Start a chat from Organize or the terminal — each session becomes a node here."
+        />
+      )}
 
+      {sessions.length > 0 && (
+      <>
       <div className="viewer-stage">
         <div className="viewer-world" ref={sceneRef}>
           {sessions.map((s, i) => {
@@ -103,12 +149,14 @@ export function ThreeDViewer() {
       </div>
 
       <div className="viewer-legend">
-        {Object.entries(SOURCE_COLORS).map(([src, c]) => (
+        {presentSources.map(([src, n]) => (
           <span key={src} className="legend-item">
-            <i style={{ background: c }} /> {src}
+            <i style={{ background: SOURCE_COLORS[src] ?? "#ccc" }} /> {src} · {n}
           </span>
         ))}
       </div>
+      </>
+      )}
     </div>
   );
 }

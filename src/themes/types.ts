@@ -16,10 +16,11 @@ export interface ThemeTokens {
   "--chip": string; // tags / chips background
   // Brand
   "--signal": string; // reserved accent (used sparingly, ≤10%)
-  "--signal-soft": string; // softer accent for hovers
+  "--signal-soft"?: string; // softer accent for TEXT-ON-DARK (links/values); light themes omit and fall back to --signal
   "--ok": string; // success / live
   "--warn": string; // attention
   "--danger": string; // destructive / error
+  "--on-signal": string; // text/icon color drawn on --signal fills (active nav, primary buttons)
   // Type
   "--font-display": string;
   "--font-mono": string;

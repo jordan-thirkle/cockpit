@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useState } from "react";
 import {
   isAuthRequired,
   getAuthMe,
@@ -19,19 +19,38 @@ import { ChatPanel } from "./components/ChatPanel";
 import { ControlCenter } from "./components/ControlCenter";
 import { WorkspacePanel } from "./components/WorkspacePanel";
 import { MemoryPanel } from "./components/MemoryPanel";
-// Cockpit-themed structured views (no upstream Hermes page exists).
-import {
-  StatusPage,
-  GatewayPage,
-  GatewayStatusPage,
-  ConfigDefaultsPage,
-  MemoryProvidersPage,
-  ToolsetsPage,
-  ModelInfoPage,
-} from "@/hermes/ThemedPages";
+const StatusPage = lazy(() =>
+  import("./components/Pages").then((m) => ({ default: m.StatusPage })),
+);
+const GatewayPage = lazy(() =>
+  import("./components/Pages").then((m) => ({ default: m.GatewayPage })),
+);
+const GatewayStatusPage = lazy(() =>
+  import("./components/Pages").then((m) => ({ default: m.GatewayStatusPage })),
+);
+const ConfigDefaultsPage = lazy(() =>
+  import("./components/Pages").then((m) => ({ default: m.ConfigDefaultsPage })),
+);
+const MemoryProvidersPage = lazy(() =>
+  import("./components/Pages").then((m) => ({ default: m.MemoryProvidersPage })),
+);
+const ToolsetsPage = lazy(() =>
+  import("./components/Pages").then((m) => ({ default: m.ToolsetsPage })),
+);
+const ModelInfoPage = lazy(() =>
+  import("./components/Pages").then((m) => ({ default: m.ModelInfoPage })),
+);
 // Hermes's own solved dashboard pages, vendored into src/hermes/vendor and
 // hosted by a thin provider/router adapter (integrate, don't rebuild).
+import { HermesModelsPage } from "@/hermes/HermesPages";
 import {
+  AnalyticsUsagePage,
+  AnalyticsModelsPage,
+  ConfigPage,
+  CronPage,
+  McpPage,
+  PluginsPage,
+  SkillsPage,
   EnvPage,
   FilesPage,
   LogsPage,
@@ -41,20 +60,14 @@ import {
   SystemPage,
   DocsPage,
   ChannelsPage,
-} from "@/hermes/HermesPages2";
-// Hermes's own solved dashboard pages, vendored into src/hermes/vendor and
-// hosted by a thin provider/router adapter (integrate, don't rebuild).
-import {
-  HermesAnalyticsPage,
-  HermesConfigPage,
-  HermesCronPage,
-  HermesMcpPage,
-  HermesModelsPage,
-  HermesPluginsPage,
-  HermesSkillsPage,
-} from "@/hermes/HermesPages";
-import { AchievementsPage } from "./components/AchievementsPage";
-import { ThreeDViewer } from "./components/ThreeDViewer";
+} from "@/components/Pages";
+// Cockpit-origin panels — code-split so they don't bloat the initial entry chunk.
+const AchievementsPage = lazy(() =>
+  import("./components/AchievementsPage").then((m) => ({ default: m.AchievementsPage })),
+);
+const ThreeDViewer = lazy(() =>
+  import("./components/ThreeDViewer").then((m) => ({ default: m.ThreeDViewer })),
+);
 import { ThemeProvider } from "@/themes";
 
 export function App() {
@@ -168,31 +181,34 @@ export function App() {
         }
       />
 
+      {/* Panels render inside a Suspense boundary: each is React.lazy()'d, so
+          its code chunk loads on demand and a "Loading…" state shows meanwhile. */}
+      <Suspense fallback={<div className="page-state">Loading…</div>}>
       {/* Hermes dashboard pages (endpoint-backed) */}
       {page === "status" && <StatusPage />}
       {page === "gateway" && <GatewayPage />}
       {page === "gateway-status" && <GatewayStatusPage />}
-      {page === "config" && <HermesConfigPage />}
+      {page === "config" && <ConfigPage />}
       {page === "config-defaults" && <ConfigDefaultsPage />}
       {page === "env" && <EnvPage />}
       {page === "files" && <FilesPage />}
       {page === "logs" && <LogsPage />}
       {page === "webhooks" && <WebhooksPage />}
       {page === "pairing" && <PairingPage />}
-      {page === "plugins" && <HermesPluginsPage />}
+      {page === "plugins" && <PluginsPage />}
       {page === "profiles" && <ProfilesPage />}
       {page === "system" && <SystemPage />}
       {page === "docs" && <DocsPage />}
       {page === "memory-providers" && <MemoryProvidersPage />}
-      {page === "cron" && <HermesCronPage />}
-      {page === "mcp" && <HermesMcpPage />}
+      {page === "cron" && <CronPage />}
+      {page === "mcp" && <McpPage />}
       {page === "channels" && <ChannelsPage />}
       {page === "toolsets" && <ToolsetsPage />}
       {page === "model-info" && <ModelInfoPage />}
-      {page === "analytics-usage" && <HermesAnalyticsPage />}
-      {page === "analytics-models" && <HermesAnalyticsPage />}
+      {page === "analytics-usage" && <AnalyticsUsagePage />}
+      {page === "analytics-models" && <AnalyticsModelsPage />}
       {page === "models" && <HermesModelsPage />}
-      {page === "skills" && <HermesSkillsPage />}
+      {page === "skills" && <SkillsPage />}
       {page === "achievements" && <AchievementsPage />}
       {page === "3d" && <ThreeDViewer />}
 
@@ -274,6 +290,7 @@ export function App() {
       {activeSession && <ChatPanel session={activeSession} />}
       {activeRepo && <ChatPanel repo={activeRepo} />}
       {newChat && !activeSession && !activeRepo && <ChatPanel session={null} />}
+      </Suspense>
     </div>
     </ThemeProvider>
   );
