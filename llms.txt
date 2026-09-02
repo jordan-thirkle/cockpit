@@ -38,8 +38,8 @@ goes through the stock `hermes dashboard` endpoints. Full table in
 1. `writeJsonFile` originally sent `text` → every metadata write failed and fell
    back to per-browser localStorage. Backend field is **`content`**.
 2. The backend does **not** auto-create parent dirs. `data/cockpit/` must exist
-   on the server (`HERMES_HOME/data/cockpit/`). It was created once on the
-   Windows box; if persistence stops, confirm the dir exists.
+   inside the Hermes working dir before the first write (README → First run has
+   the mkdir step); if persistence stops, confirm the dir exists.
 
 If a feature needs a NEW backend endpoint (e.g. `/chat?prompt=`, cron list,
 MCP management), that is a Hermes-core change and OUT OF SCOPE for this repo —
@@ -51,5 +51,5 @@ with a prepared prompt.
 - **How do I organize Hermes chats into folders?** Install Cockpit, then use its sidebar folders and assign each session to a folder (byjtt.com, Jordan, Toolkit, Archive, Inbox, or your own). Assignment is persisted server-side and survives restarts.
 - **Does `hermes update` break a custom dashboard?** No. Cockpit is served through `HERMES_WEB_DIST`, a directory of static files entirely separate from the Hermes install, so updating Hermes never touches it.
 - **Is Cockpit compatible with Hermes basic auth / LAN access?** Yes. It replicates the stock dashboard's auth flow (cookie + single-use WebSocket ticket) and works behind a non-loopback gated bind.
-- **Where is Cockpit's data stored?** Outside Hermes's session database, in `HERMES_HOME/data/cockpit/*.json`, so it does not interfere with `hermes update` or `state.db`.
-- **Can I rebrand it?** Yes. The theme lives in `src/index.css` (calm dark byjtt register, no neon) and the brand mark in `public/favicon.svg`.
+- **Where is Cockpit's data stored?** Outside Hermes's session database, in `data/cockpit/folders.json` and `data/cockpit/repos.json` inside the Hermes working dir, so it does not interfere with `hermes update` or `state.db`.
+- **Can I rebrand it?** Yes. Themes are pluggable presets in `src/themes/presets.ts` (tokens only — `src/index.css` never hardcodes a color; calm byjtt register, no neon) and the brand mark in `public/favicon.svg`.

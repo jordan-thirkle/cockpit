@@ -17,10 +17,17 @@ Cockpit rides the stock Hermes backend through the `HERMES_WEB_DIST` environment
 ## Quick start
 
 ```bash
-git clone https://github.com/byjtt/cockpit.git
+git clone https://github.com/jordan-thirkle/cockpit.git
 cd cockpit
 npm install
 npm run build
+```
+
+**One-time first-run step:** Cockpit saves folder/repo metadata through the dashboard's file API, which does not create parent directories. Create the metadata folder inside the Hermes working directory (the `hermes-agent` install dir — `hermes doctor` shows the paths):
+
+```bash
+mkdir -p "<hermes-agent>/data/cockpit"        # Linux / macOS
+New-Item -ItemType Directory -Force "<hermes-agent>\data\cockpit"   # Windows PowerShell
 ```
 
 Then serve it through your existing `hermes dashboard` by pointing `HERMES_WEB_DIST` at Cockpit's `dist/`:
@@ -66,7 +73,7 @@ Open `http://127.0.0.1:3001` (local) or `http://<LAN-IP>:3001` (LAN, where `<LAN
 | Folder/workspace data model + persistence | [`src/lib/cockpitStore.ts`](src/lib/cockpitStore.ts) |
 | xterm.js PTY terminal | [`src/components/ChatPanel.tsx`](src/components/ChatPanel.tsx) |
 | Three-pane shell (folders · sessions · chat) | [`src/App.tsx`](src/App.tsx) |
-| Theme (calm dark byjtt register) | [`src/index.css`](src/index.css) |
+| Theme (pluggable byjtt register) | [`src/themes/`](src/themes) — presets in [`presets.ts`](src/themes/presets.ts), tokens in [`src/index.css`](src/index.css) |
 
 ## Configuration
 
@@ -74,7 +81,7 @@ There is essentially **one** configuration surface: the `HERMES_WEB_DIST` enviro
 
 ## Customization
 
-- **Rebrand:** edit `src/index.css` (color tokens at the top) and `public/favicon.svg`.
+- **Rebrand:** color tokens live in `src/themes/presets.ts` (one entry per theme; `src/index.css` never hardcodes a color) plus `public/favicon.svg`.
 - **Default folders:** edit `DEFAULT_FOLDERS` in `src/lib/cockpitStore.ts`.
 - **Add panels:** the middle pane (`SessionList`) and `WorkspacePanel` are where workspace quick-links / notes render.
 
@@ -82,7 +89,7 @@ There is essentially **one** configuration surface: the `HERMES_WEB_DIST` enviro
 
 **Does `hermes update` break Cockpit?** No. Cockpit's `dist/` sits outside the Hermes install; updating Hermes never touches it.
 
-**Where is Cockpit's data stored?** In `HERMES_HOME/data/cockpit/*.json` — outside `state.db`, so it does not interfere with Hermes's session store or updates.
+**Where is Cockpit's data stored?** In `HERMES_HOME/data/cockpit/folders.json` and `repos.json` — outside `state.db`, so it does not interfere with Hermes's session store or updates. If you ran a private Cockpit build with differently-named data files, rename them to `folders.json` / `repos.json` after upgrading.
 
 **Is it compatible with Hermes basic auth / LAN access?** Yes. It reproduces the stock dashboard's auth handshake (cookie + single-use WebSocket ticket) and works behind a gated, non-loopback bind.
 

@@ -18,13 +18,13 @@
     "terminal-ui",
     "workspace"
   ],
-  "homepage": "https://github.com/byjtt/cockpit#readme",
+  "homepage": "https://github.com/jordan-thirkle/cockpit#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/byjtt/cockpit.git"
+    "url": "https://github.com/jordan-thirkle/cockpit.git"
   },
   "bugs": {
-    "url": "https://github.com/byjtt/cockpit/issues"
+    "url": "https://github.com/jordan-thirkle/cockpit/issues"
   },
   "author": "By JTT",
   "license": "MIT",
