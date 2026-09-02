@@ -51,10 +51,7 @@ const DEFAULT_FOLDERS: CockpitFolder[] = [
     icon: "◆",
     subtitle: "Brand, site, publishing, evidence",
     sessionIds: [],
-    links: [
-      { label: "byjtt.com repo", url: "D:/Projects/byjtt-com" },
-      { label: "Publishing evidence", url: "D:/Projects/byjtt-com/src/content" },
-    ],
+    links: [], // add your own quick-links per workspace in the UI
   },
   {
     id: "jordan",
@@ -71,7 +68,7 @@ const DEFAULT_FOLDERS: CockpitFolder[] = [
     icon: "⚙",
     subtitle: "Infra, scripts, agents, maintenance",
     sessionIds: [],
-    links: [{ label: "Toolkit repo", url: "D:/Projects/Toolkit" }],
+    links: [],
   },
   {
     id: "archive",
