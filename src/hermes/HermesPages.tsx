@@ -6,18 +6,18 @@
 // its own `setPage` state, so we mount each vendored page inside a MemoryRouter
 // and supply the minimal providers they need — the least invasive adapter that
 // keeps the upstream components untouched.
+//
+// Currently hosted vendored pages: Models. (Other Hermes surfaces — Skills,
+// Cron, MCP, Plugins, Config, Analytics, Files, Logs, etc. — render through
+// Cockpit's own ApiPage-based panels in src/components/Pages.tsx. To host a
+// vendored page instead, re-vendor it with scripts/vendor_pages.py and add a
+// lazy host below.)
 import { Suspense, lazy, useMemo, useState, type ReactNode } from "react";
 import { MemoryRouter } from "react-router";
 import { I18nProvider } from "@/hermes/vendor/i18n/context";
 import { PageHeaderContext } from "@/hermes/vendor/contexts/page-header-context";
 
-const VendorSkills = lazy(() => import("@/hermes/vendor/pages/SkillsPage"));
 const VendorModels = lazy(() => import("@/hermes/vendor/pages/ModelsPage"));
-const VendorAnalytics = lazy(() => import("@/hermes/vendor/pages/AnalyticsPage"));
-const VendorCron = lazy(() => import("@/hermes/vendor/pages/CronPage"));
-const VendorMcp = lazy(() => import("@/hermes/vendor/pages/McpPage"));
-const VendorPlugins = lazy(() => import("@/hermes/vendor/pages/PluginsPage"));
-const VendorConfig = lazy(() => import("@/hermes/vendor/pages/ConfigPage"));
 
 export function HermesPageHost({ children }: { children: ReactNode }) {
   const [title, setTitle] = useState<string | null>(null);
@@ -47,38 +47,8 @@ export function HermesPageHost({ children }: { children: ReactNode }) {
   );
 }
 
-export const HermesSkillsPage = () => (
-  <HermesPageHost>
-    <VendorSkills />
-  </HermesPageHost>
-);
 export const HermesModelsPage = () => (
   <HermesPageHost>
     <VendorModels />
-  </HermesPageHost>
-);
-export const HermesAnalyticsPage = () => (
-  <HermesPageHost>
-    <VendorAnalytics />
-  </HermesPageHost>
-);
-export const HermesCronPage = () => (
-  <HermesPageHost>
-    <VendorCron />
-  </HermesPageHost>
-);
-export const HermesMcpPage = () => (
-  <HermesPageHost>
-    <VendorMcp />
-  </HermesPageHost>
-);
-export const HermesPluginsPage = () => (
-  <HermesPageHost>
-    <VendorPlugins />
-  </HermesPageHost>
-);
-export const HermesConfigPage = () => (
-  <HermesPageHost>
-    <VendorConfig />
   </HermesPageHost>
 );

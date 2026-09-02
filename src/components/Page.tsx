@@ -141,5 +141,8 @@ function filterKeys(obj: any, redact?: (k: string) => boolean): any {
   return out;
 }
 
-const SECRET_KEYS = /token|secret|key|password|api_key|authorization|cookie|passwd|auth/i;
+// Word-boundary matched so benign fields ("authors", "hotkeys", "monkeys")
+// survive, while real secret-ish fields are dropped from panel JSON dumps.
+const SECRET_KEYS =
+  /\b(token|secret|password|passwd|api[_-]?key|access[_-]?key|authorization|cookie|credential|signature|bearer|auth)\b/i;
 export const redactSecrets = (k: string) => SECRET_KEYS.test(k);

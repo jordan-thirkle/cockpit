@@ -13,23 +13,28 @@ import os
 import re
 import sys
 
-SRC_ROOT = "C:/Users/jorda/AppData/Local/hermes/hermes-agent/web/src"
-VENDOR = "D:/Projects/cockpit/src/hermes/vendor"
-SHARED_ROOT = "C:/Users/jorda/AppData/Local/hermes/hermes-agent/apps/shared/src"
+# Paths come from the environment so this script stays machine-agnostic and
+# the repo stays free of private machine layouts:
+#   HERMES_SRC    = <hermes-agent checkout>/web/src
+#   HERMES_SHARED = <hermes-agent checkout>/apps/shared/src
+#   COCKPIT_SRC   = this repo's src directory (default: ./src)
+SRC_ROOT = os.environ.get("HERMES_SRC", "")
+VENDOR = os.path.join(os.environ.get("COCKPIT_SRC", "src"), "hermes", "vendor")
+SHARED_ROOT = os.environ.get("HERMES_SHARED", "")
 EXTS = [".tsx", ".ts", ".jsx", ".js"]
+
+if not SRC_ROOT or not SHARED_ROOT:
+    sys.exit(
+        "Set HERMES_SRC=<hermes-agent>/web/src and HERMES_SHARED=<hermes-agent>/apps/shared/src "
+        "(COCKPIT_SRC defaults to ./src). See src/hermes/vendor/README.md."
+    )
 
 TS_NOCHECK = "// @ts-nocheck -- vendored verbatim from hermes-agent/web/src; not type-owned by Cockpit\n"
 
+# Only pages actually hosted by src/hermes/HermesPages.tsx. Vendoring more
+# just ships dead code — re-add an entry here when you host it.
 TARGET_PAGES = [
-    "pages/EnvPage",
-    "pages/FilesPage",
-    "pages/LogsPage",
-    "pages/WebhooksPage",
-    "pages/PairingPage",
-    "pages/ProfilesPage",
-    "pages/SystemPage",
-    "pages/DocsPage",
-    "pages/ChannelsPage",
+    "pages/ModelsPage",
 ]
 
 # specifier -> (rewritten_spec, source_file_or_None)
