@@ -2,6 +2,7 @@ import { useState } from "react";
 import { cockpitStore, type CockpitFolder } from "@/lib/cockpitStore";
 import { ThemePicker } from "@/themes";
 import { Repositories } from "./Repositories";
+import { showToast } from "./Toasts";
 
 type NavItem = { id: string; label: string; group: string };
 
@@ -72,10 +73,14 @@ export function Sidebar({
   const submitNew = async () => {
     const n = name.trim();
     if (!n) return;
-    const f = await cockpitStore.createFolder(n);
-    setName("");
-    setCreating(false);
-    onSelect(f.id);
+    try {
+      const f = await cockpitStore.createFolder(n);
+      setName("");
+      setCreating(false);
+      onSelect(f.id);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : String(err));
+    }
   };
 
   let lastGroup = "";

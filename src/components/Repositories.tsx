@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { repoStore, type CockpitRepo } from "@/lib/cockpitStore";
+import { showToast } from "./Toasts";
 
 export function Repositories({
   onOpenRepo,
@@ -11,6 +12,7 @@ export function Repositories({
   const [adding, setAdding] = useState(false);
   const [owner, setOwner] = useState("");
   const [name, setName] = useState("");
+  const [linkError, setLinkError] = useState("");
 
   const state = repoStore.getState();
   const repos = repoStore.getRepos();
@@ -27,36 +29,52 @@ export function Repositories({
       if (!res.ok) {
         setGhUser("");
         setLinking(false);
+        setLinkError(
+          res.status === 404
+            ? `No GitHub user named "${u}" — check the spelling.`
+            : `GitHub API returned ${res.status} — try again in a moment.`,
+        );
         return;
       }
       const json = (await res.json()) as { login?: string };
       if (!json.login || json.login.toLowerCase() !== u.toLowerCase()) {
         setGhUser("");
         setLinking(false);
+        setLinkError(`No GitHub user named "${u}" — check the spelling.`);
         return;
       }
     } catch {
       // Network/API unavailable — do not store an unverified username.
       setGhUser("");
       setLinking(false);
+      setLinkError("Couldn't reach the GitHub API — check your connection and retry.");
       return;
     }
     // Cockpit stores only the verified username (no token). The agent uses the
     // existing `gh`/GITHUB_TOKEN auth path for actual repo operations. "Link GitHub"
     // here means "the GitHub account exists at this username", not "we hold a token".
-    await repoStore.setLinked(true, u);
-    setLinking(false);
-    setGhUser("");
+    try {
+      await repoStore.setLinked(true, u);
+      setLinking(false);
+      setGhUser("");
+      setLinkError("");
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : String(err));
+    }
   };
 
   const doAdd = async () => {
     const o = owner.trim();
     const n = name.trim();
     if (!o || !n) return;
-    await repoStore.addRepo(o, n, "main");
-    setOwner("");
-    setName("");
-    setAdding(false);
+    try {
+      await repoStore.addRepo(o, n, "main");
+      setOwner("");
+      setName("");
+      setAdding(false);
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : String(err));
+    }
   };
 
   return (
@@ -90,6 +108,7 @@ export function Repositories({
             onChange={(e) => setGhUser(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && doLink()}
           />
+          {linkError && <div className="repo-link-error">{linkError}</div>}
           <div className="repo-link-note">
             Verifies the username via the public GitHub API before storing it.
             Uses Hermes's existing <code>gh</code>/GITHUB_TOKEN auth for repo ops.

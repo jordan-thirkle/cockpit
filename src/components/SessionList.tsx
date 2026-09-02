@@ -70,7 +70,10 @@ export function SessionList({
   onExport?: (id: string) => void;
 }) {
   const [srcFilter, setSrcFilter] = useState("All");
-  const folders = cockpitStore.getFolders().filter((f) => !f.system || f.id !== "inbox");
+  // Non-system folders only: Inbox/Archive are appended below as fixed
+  // options. (Filtering out ALL system folders prevents a duplicate
+  // "Archive" option — Archive is a system folder AND was hardcoded below.)
+  const folders = cockpitStore.getFolders().filter((f) => !f.system);
 
   // Only filter when a real pill is picked; "All" shows everything.
   const filtered =

@@ -311,21 +311,27 @@ export async function readJsonFile<T>(name: string, fallback: T): Promise<T> {
       `/api/fs/read-text?path=${encodeURIComponent(`${COCKPIT_DIR}/${name}.json`)}`,
     );
     return JSON.parse(r.text) as T;
-  } catch {
-    // Server read failed (unauth / network). Return defaults rather than
-    // silently trusting a stale localStorage copy — the server is the
-    // source of truth and split-brain would lose the user's data on reload.
-    return fallback;
+  } catch (err) {
+    // 404 = the file simply doesn't exist yet (fresh install): defaults are
+    // correct. ANY other failure (401, 500, network) must throw — returning
+    // defaults here would put empty defaults in memory and the next persist()
+    // would overwrite the user's real saved data with them.
+    if (isNotFoundError(err)) return fallback;
+    throw err;
   }
+}
+
+function isNotFoundError(err: unknown): boolean {
+  const msg = err instanceof Error ? err.message : String(err);
+  return /\b404\b/.test(msg) || /not[-_ ]?found/i.test(msg);
 }
 
 export async function writeJsonFile(name: string, data: unknown): Promise<void> {
   // Use the fs write-text endpoint (managed, HERMES_HOME-rooted).
   // Backend model uses `content` (not `text`) and will NOT auto-create
-  // parent dirs — ensure data/cockpit exists once (idempotent).
-  // NOTE: do NOT fall back to localStorage on failure. That created a
-  // split-brain where the browser "saved" locally but the server file
-  // stayed stale, so changes vanished on reload. Surface errors instead.
+  // parent dirs. NOTE: do NOT fall back to localStorage on failure — that
+  // created a split-brain where the browser "saved" locally but the server
+  // file stayed stale, so changes vanished on reload. Surface errors instead.
   const res = await fetch(`${BASE}/api/fs/write-text`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -338,11 +344,12 @@ export async function writeJsonFile(name: string, data: unknown): Promise<void> 
   if (!res.ok) {
     const body = await res.text().catch(() => "");
     throw new Error(
-      `writeJsonFile(${name}) failed: ${res.status} ${res.statusText} ${body.slice(0, 200)}`,
+      `Cockpit could not save "${name}" (HTTP ${res.status}). ` +
+        `If this is a fresh install, create the directory data/cockpit/ inside the ` +
+        `Hermes working directory first (see README → First run). ${body.slice(0, 160)}`,
     );
   }
 }
-
 // ── Full Hermes dashboard surface (verified: every route returns 401 when
 //    unauthenticated, i.e. the route EXISTS on this backend — so these are
 //    real, endpoint-backed pages, not faked UI). ──────────────────────────

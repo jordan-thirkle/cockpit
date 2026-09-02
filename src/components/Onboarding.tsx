@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { cockpitStore, type CockpitFolder } from "@/lib/cockpitStore";
+import { showToast } from "./Toasts";
 
 // First-run guided onboarding. Explains Cockpit in plain language and lets
 // the user pick a use-case that tailors their workspace. Stored once.
@@ -20,19 +21,26 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
     setPicked((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
 
   const finish = async () => {
-    // Tailor: nudge default folders to match the use-case.
-    for (const id of picked) {
-      const map: Record<string, Partial<CockpitFolder>> = {
-        gamedev: { subtitle: "Game dev: prototypes, 3D, builds" },
-        webdev: { subtitle: "Web: sites, APIs, SEO" },
-        designer: { subtitle: "Design: brand, UI, assets" },
-      };
-      if (map[id]) {
-        const f = cockpitStore.getFolder("byjtt") ?? cockpitStore.getFolder("toolkit");
-        if (f) await cockpitStore.updateFolder(f.id, map[id]);
+    try {
+      // Tailor: nudge default folders to match the use-case.
+      for (const id of picked) {
+        const map: Record<string, Partial<CockpitFolder>> = {
+          gamedev: { subtitle: "Game dev: prototypes, 3D, builds" },
+          webdev: { subtitle: "Web: sites, APIs, SEO" },
+          designer: { subtitle: "Design: brand, UI, assets" },
+        };
+        if (map[id]) {
+          const f = cockpitStore.getFolder("byjtt") ?? cockpitStore.getFolder("toolkit");
+          if (f) await cockpitStore.updateFolder(f.id, map[id]);
+        }
       }
+      await cockpitStore.setSeenOnboarding();
+    } catch (err) {
+      // Never trap the user in onboarding — dismiss anyway, surface the error.
+      showToast(
+        `Could not save onboarding prefs: ${err instanceof Error ? err.message : err}`,
+      );
     }
-    await cockpitStore.setSeenOnboarding();
     onDone();
   };
 

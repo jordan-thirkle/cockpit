@@ -187,7 +187,7 @@ export function ChatPanel({
       term.dispose();
       setCloseCode(null);
     };
-  }, [isEnded, session?.id, repo?.id, reconnectNonce]);
+  }, [isEnded, session?.id, sessionId, repo?.id, reconnectNonce]);
 
   const doReconnect = () => setReconnectNonce((n) => n + 1);
 

@@ -1,4 +1,4 @@
-import { Suspense, lazy, useEffect, useMemo, useState } from "react";
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from "react";
 import {
   isAuthRequired,
   getAuthMe,
@@ -18,6 +18,7 @@ import { Sidebar } from "./components/Sidebar";
 import { SessionList } from "./components/SessionList";
 import { ChatPanel } from "./components/ChatPanel";
 import { ControlCenter } from "./components/ControlCenter";
+import { ToastHost, showToast, runMutation } from "./components/Toasts";
 import { WorkspacePanel } from "./components/WorkspacePanel";
 import { MemoryPanel } from "./components/MemoryPanel";
 const StatusPage = lazy(() =>
@@ -86,6 +87,9 @@ export function App() {
   // Transition to a fresh new-chat terminal (used by the ended-session view
   // and the SessionList "New chat" affordance — both want the same outcome).
   const [newChatSession, setNewChatSession] = useState<SessionInfo | null>(null);
+  // Toast the first session-refresh failure only (a backend blip shouldn't
+  // spam an error every 15s; recovery resets it).
+  const refreshFailedOnce = useRef(false);
   const handleNewChat = async () => {
     setNewChat(true);
     setActiveSession(null);
@@ -97,6 +101,7 @@ export function App() {
       setNewChatSession(found ?? { id: session_id } as SessionInfo);
     } catch {
       setNewChatSession(null);
+      showToast("Could not create a new session — is the Hermes backend reachable?");
     }
   };
 
@@ -113,15 +118,37 @@ export function App() {
 
   // ── load store + sessions once authed ──────────────────────────────────
   const refreshSessions = async () => {
-    const data = await getSessions(100, 0, "recent");
-    setSessions(data.sessions);
+    try {
+      const data = await getSessions(100, 0, "recent");
+      setSessions(data.sessions);
+      refreshFailedOnce.current = false;
+    } catch (err) {
+      console.warn("refreshSessions failed:", err);
+      if (!refreshFailedOnce.current) {
+        refreshFailedOnce.current = true;
+        showToast("Live session refresh failed — the list may be stale. Retrying every 15s.");
+      }
+    }
   };
   useEffect(() => {
     if (authed !== true) return;
     (async () => {
       await cockpitStore.load();
       await repoStore.load();
-      const seen = await cockpitStore.hasSeenOnboarding();
+      const loadErr = cockpitStore.getLoadError() ?? repoStore.getLoadError();
+      if (loadErr) {
+        showToast(
+          `Cockpit metadata could not be loaded from the server — folder/repo edits are disabled until you refresh. (${loadErr})`,
+        );
+      }
+      let seen = false;
+      try {
+        seen = await cockpitStore.hasSeenOnboarding();
+      } catch (err) {
+        showToast(
+          `Could not read the onboarding flag: ${err instanceof Error ? err.message : err}`,
+        );
+      }
       setShowOnboarding(!seen);
       await refreshSessions();
     })();
@@ -163,6 +190,7 @@ export function App() {
 
   return (
     <ThemeProvider>
+    <ToastHost />
     {showOnboarding && <Onboarding onDone={() => setShowOnboarding(false)} />}
     <div className={`app${activeSession || newChat || activeRepo ? " with-chat" : ""}`}>
       <button
@@ -250,36 +278,46 @@ export function App() {
               setNewChat(true);
             }}
             onAssign={async (sid, fid) => {
-              await cockpitStore.assignSession(sid, fid);
-              await refreshSessions();
+              await runMutation(async () => {
+                await cockpitStore.assignSession(sid, fid);
+                await refreshSessions();
+              });
             }}
             onRefresh={() => refreshSessions()}
             onRename={async (id, title) => {
-              await renameSession(id, title);
-              await refreshSessions();
+              await runMutation(async () => {
+                await renameSession(id, title);
+                await refreshSessions();
+              });
             }}
             onDelete={async (id) => {
-              await deleteSession(id);
-              await refreshSessions();
+              await runMutation(async () => {
+                await deleteSession(id);
+                await refreshSessions();
+              });
             }}
             onArchive={async (id, archive) => {
-              await archiveSession(id, archive);
-              await refreshSessions();
+              await runMutation(async () => {
+                await archiveSession(id, archive);
+                await refreshSessions();
+              });
             }}
             onExport={async (id) => {
-              const d = await exportSession(id);
-              if (d?.markdown) {
-                const blob = new Blob([d.markdown], { type: "text/markdown" });
-                const url = URL.createObjectURL(blob);
-                const a = Object.assign(document.createElement("a"), {
-                  href: url,
-                  download: `${id}.md`,
-                });
-                a.click();
-                setTimeout(() => URL.revokeObjectURL(url), 1000);
-              } else {
-                alert("Export returned no content.");
-              }
+              await runMutation(async () => {
+                const d = await exportSession(id);
+                if (d?.markdown) {
+                  const blob = new Blob([d.markdown], { type: "text/markdown" });
+                  const url = URL.createObjectURL(blob);
+                  const a = Object.assign(document.createElement("a"), {
+                    href: url,
+                    download: `${id}.md`,
+                  });
+                  a.click();
+                  setTimeout(() => URL.revokeObjectURL(url), 1000);
+                } else {
+                  showToast("Export returned no content for this session.");
+                }
+              });
             }}
           />
           {folder && (
@@ -287,12 +325,16 @@ export function App() {
               <WorkspacePanel
                 folder={folder}
                 onUpdate={async (patch) => {
-                  await cockpitStore.updateFolder(folder.id, patch);
-                  setSessions((p) => [...p]);
+                  await runMutation(async () => {
+                    await cockpitStore.updateFolder(folder.id, patch);
+                    setSessions((p) => [...p]);
+                  });
                 }}
                 onDelete={async () => {
-                  await cockpitStore.deleteFolder(folder.id);
-                  setActiveFolder("inbox");
+                  await runMutation(async () => {
+                    await cockpitStore.deleteFolder(folder.id);
+                    setActiveFolder("inbox");
+                  });
                 }}
               />
               <MemoryPanel />

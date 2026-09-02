@@ -1135,3 +1135,48 @@ button.text-success { color: var(--muted); background-color: transparent; border
 }
 .doc-body :global(.doc-link):hover { color: var(--signal-soft); }
 .doc-hr { border: none; border-top: 1px solid var(--line); margin: 12px 0; }
+
+/* ── Toasts: surfaced metadata/save failures ────────────────────────── */
+/* Token-driven to match the house register: hairlines, no neon, no glow. */
+.toast-host {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(420px, calc(100vw - 32px));
+}
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--muted);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-size: 13px;
+  line-height: 1.4;
+  box-shadow: none;
+}
+.toast-error { border-left-color: var(--danger); }
+.toast-ok { border-left-color: var(--ok); }
+.toast-info { border-left-color: var(--signal); }
+.toast-msg { flex: 1; overflow-wrap: anywhere; }
+.toast-x {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  font-size: 12px;
+  padding: 0 2px;
+}
+.toast-x:hover { color: var(--ink); }
+
+.repo-link-error {
+  color: var(--danger);
+  font-size: 12px;
+  padding: 2px 2px 0;
+}

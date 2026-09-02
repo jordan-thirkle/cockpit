@@ -98,14 +98,28 @@ const STORE_KEY = "folders";
 export class CockpitStore {
   private folders: CockpitFolder[] = structuredClone(DEFAULT_FOLDERS);
   private loaded = false;
+  private loadError: string | null = null;
 
   async load(): Promise<void> {
-    const saved = await import("@/lib/hermesApi").then((m) =>
-      m.readJsonFile<CockpitFolder[]>(STORE_KEY, DEFAULT_FOLDERS),
-    );
-    // Merge: keep system folders from defaults, overlay saved user folders.
-    this.folders = this.mergeFolders(saved);
-    this.loaded = true;
+    try {
+      const saved = await import("@/lib/hermesApi").then((m) =>
+        m.readJsonFile<CockpitFolder[]>(STORE_KEY, DEFAULT_FOLDERS),
+      );
+      // Merge: keep system folders from defaults, overlay saved user folders.
+      this.folders = this.mergeFolders(saved);
+      this.loadError = null;
+      this.loaded = true;
+    } catch (err) {
+      // Non-404 read failure (auth/network/500). Keep defaults in memory but
+      // record the failure: persist() refuses to write while set, because
+      // saving now could overwrite the user's real server-side data with
+      // these defaults.
+      this.loadError = err instanceof Error ? err.message : String(err);
+    }
+  }
+
+  getLoadError(): string | null {
+    return this.loadError;
   }
 
   private mergeFolders(saved: CockpitFolder[]): CockpitFolder[] {
@@ -122,6 +136,14 @@ export class CockpitStore {
   }
 
   async persist(): Promise<void> {
+    if (this.loadError) {
+      throw new Error(
+        `Cockpit metadata failed to load (${this.loadError}). Refresh the page — saving now could overwrite your saved folders.`,
+      );
+    }
+    if (!this.loaded) {
+      throw new Error("Cockpit metadata is still loading — try again in a moment.");
+    }
     await import("@/lib/hermesApi").then((m) => m.writeJsonFile(STORE_KEY, this.folders));
   }
 
@@ -214,17 +236,35 @@ const DEFAULT_GITHUB: GithubState = { linked: false, repos: [] };
 export class RepoStore {
   private state: GithubState = structuredClone(DEFAULT_GITHUB);
   private loaded = false;
+  private loadError: string | null = null;
 
   async load(): Promise<void> {
-    this.state = await import("@/lib/hermesApi").then((m) =>
-      m.readJsonFile<GithubState>(REPO_KEY, DEFAULT_GITHUB),
-    );
-    if (!this.state.repos) this.state.repos = [];
-    if (this.state.linked === undefined) this.state.linked = false;
-    this.loaded = true;
+    try {
+      this.state = await import("@/lib/hermesApi").then((m) =>
+        m.readJsonFile<GithubState>(REPO_KEY, DEFAULT_GITHUB),
+      );
+      if (!this.state.repos) this.state.repos = [];
+      if (this.state.linked === undefined) this.state.linked = false;
+      this.loadError = null;
+      this.loaded = true;
+    } catch (err) {
+      this.loadError = err instanceof Error ? err.message : String(err);
+    }
+  }
+
+  getLoadError(): string | null {
+    return this.loadError;
   }
 
   async persist(): Promise<void> {
+    if (this.loadError) {
+      throw new Error(
+        `Cockpit metadata failed to load (${this.loadError}). Refresh the page — saving now could overwrite your saved repos.`,
+      );
+    }
+    if (!this.loaded) {
+      throw new Error("Cockpit metadata is still loading — try again in a moment.");
+    }
     await import("@/lib/hermesApi").then((m) => m.writeJsonFile(REPO_KEY, this.state));
   }
 
