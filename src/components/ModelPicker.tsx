@@ -40,7 +40,8 @@ export function ModelPicker({ onClose }: { onClose: () => void }) {
     () => providers.find((p) => p.slug === selectedSlug) ?? null,
     [providers, selectedSlug],
   );
-  const models = selected?.models ?? [];
+  // Own memo so downstream useMemo deps stay stable across renders.
+  const models = useMemo(() => selected?.models ?? [], [selected]);
 
   const q = query.trim().toLowerCase();
   const filteredProviders = useMemo(() => {

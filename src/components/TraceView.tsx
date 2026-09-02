@@ -32,7 +32,8 @@ export function TraceView({ sessionId }: { sessionId: string }) {
     };
   }, [sessionId]);
 
-  const messages = data?.messages ?? [];
+  // Own memo so the toolCalls memo below has stable deps.
+  const messages = useMemo(() => data?.messages ?? [], [data]);
   const toolCalls = useMemo(
     () =>
       messages.flatMap((m, i) =>

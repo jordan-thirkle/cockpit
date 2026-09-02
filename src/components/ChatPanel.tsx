@@ -187,6 +187,9 @@ export function ChatPanel({
       term.dispose();
       setCloseCode(null);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- repo is the
+    // store's stable object; repo?.id is the real reconnection key. Adding the
+    // object itself would tear down the PTY on unrelated store reloads.
   }, [isEnded, session?.id, sessionId, repo?.id, reconnectNonce]);
 
   const doReconnect = () => setReconnectNonce((n) => n + 1);
