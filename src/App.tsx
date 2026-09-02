@@ -382,9 +382,39 @@ export function App() {
         <ControlCenter onClose={() => setPage("organize")} />
       )}
 
-      {activeSession && <ChatPanel session={activeSession} onNewChat={handleNewChat} />}
-      {activeRepo && <ChatPanel repo={activeRepo} onNewChat={handleNewChat} />}
-      {newChat && !activeSession && !activeRepo && <ChatPanel session={newChatSession ?? null} onNewChat={handleNewChat} />}
+      {activeSession && (
+        <ChatPanel
+          session={activeSession}
+          onNewChat={handleNewChat}
+          onClose={() => {
+            setActiveSession(null);
+            setActiveRepo(null);
+            setNewChat(false);
+          }}
+        />
+      )}
+      {activeRepo && (
+        <ChatPanel
+          repo={activeRepo}
+          onNewChat={handleNewChat}
+          onClose={() => {
+            setActiveSession(null);
+            setActiveRepo(null);
+            setNewChat(false);
+          }}
+        />
+      )}
+      {newChat && !activeSession && !activeRepo && (
+        <ChatPanel
+          session={newChatSession ?? null}
+          onNewChat={handleNewChat}
+          onClose={() => {
+            setActiveSession(null);
+            setActiveRepo(null);
+            setNewChat(false);
+          }}
+        />
+      )}
       </Suspense>
     </div>
     </ThemeProvider>

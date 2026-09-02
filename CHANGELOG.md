@@ -5,6 +5,20 @@ under the relevant heading; link to the tracking issue where one exists.
 
 ## [Unreleased]
 
+### Fixes (2026-09-02 mobile audit)
+- **Phone: no way back out of a chat.** On ≤640px an open chat overlays the whole
+  screen (z-index 80) while the burger (60) and drawer (70) sat *below* it and the
+  chat had no back affordance — opening a session on a phone trapped you until a
+  reload. ChatPanel now takes an `onClose` prop rendering a phone-only "← Back"
+  button in both the live and ended-session headers, and the burger/backdrop/
+  drawer z-indexes were raised above the chat overlay so navigation is always
+  reachable.
+- **iOS Safari viewport height.** `.app`, `.login` and the phone `.term-wrap`
+  used `100vh` (which includes Safari's collapsed URL-bar area, pushing content
+  under the browser chrome); now `100dvh` with the `100vh` fallback for old browsers.
+- **Toasts no longer collide with the iPhone home indicator**
+  (`env(safe-area-inset-bottom)`).
+
 ### Fixes (2026-09-02 review pass)
 - **Metadata failures surface instead of silently vanishing.** Every folder/repo/onboarding
   mutation catches persistence errors and shows a toast; the 15s session-refresh loop

@@ -210,8 +210,11 @@ a { color: var(--signal-soft, var(--signal)); }
 ::-webkit-scrollbar-track { background: transparent; }
 
 /* ── Layout shell ─────────────────────────────────────────────────────── */
-.app { display: grid; grid-template-columns: 248px 1fr; height: 100vh; overflow: hidden; }
+.app { display: grid; grid-template-columns: 248px 1fr; height: 100vh; height: 100dvh; overflow: hidden; }
 .app.with-chat { grid-template-columns: 248px 320px 1fr; }
+
+/* Chat back button: phone-only (fullscreen chat overlay). */
+.chat-back { display: none; }
 
 /* Mobile top-bar hamburger — hidden on desktop, shown on small screens. */
 .topbar-burger {
@@ -249,7 +252,14 @@ a { color: var(--signal-soft, var(--signal)); }
   .app.with-chat { grid-template-columns: 1fr; }
   .chat-pane { position: fixed; inset: 0; z-index: 80; background: var(--bg); }
   .list-pane { border-right: none; }
-  .term-wrap { height: calc(100vh - 110px); }
+  .term-wrap { height: calc(100vh - 110px); height: calc(100dvh - 110px); }
+  /* Back out of the fullscreen chat — the only way to the list on a phone. */
+  .chat-back { display: inline-flex; }
+  /* The burger + drawer must sit ABOVE the fullscreen chat overlay, or a
+     phone user who opens a chat can never reach the navigation. */
+  .topbar-burger { z-index: 90; }
+  .sidebar-backdrop { z-index: 94; }
+  .sidebar { z-index: 95; }
   /* Stack workspace/memory panels under the session list. */
   .organize-stack { display: block; }
   /* Keep modals/dialogs from overflowing the viewport. */
@@ -501,7 +511,7 @@ button.text-success { color: var(--muted); background-color: transparent; border
 .theme-picker select:focus { border-color: var(--signal); }
 
 /* ── Login ───────────────────────────────────────────────────────────── */
-.login { height: 100vh; display: grid; place-items: center; background: var(--paper); }
+.login { height: 100vh; height: 100dvh; display: grid; place-items: center; background: var(--paper); }
 .login-card {
   width: 340px; background: var(--surface); border: 1px solid var(--line);
   border-radius: var(--radius); padding: 28px 24px;
@@ -1141,7 +1151,7 @@ button.text-success { color: var(--muted); background-color: transparent; border
 .toast-host {
   position: fixed;
   right: 16px;
-  bottom: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
   z-index: 1000;
   display: flex;
   flex-direction: column;

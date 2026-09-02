@@ -31,11 +31,15 @@ export function ChatPanel({
   session,
   repo,
   onNewChat,
+  onClose,
   sessionId,
 }: {
   session?: SessionInfo | null;
   repo?: CockpitRepo | null;
   onNewChat?: () => void;
+  /** Present on phone widths, where the chat overlays the whole screen —
+   *  without it there is no way back to the session list. */
+  onClose?: () => void;
   sessionId?: string | null;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
@@ -210,6 +214,11 @@ export function ChatPanel({
     return (
       <section className="chat-pane">
         <div className="chat-head">
+          {onClose && (
+            <button className="btn-ghost chat-back" onClick={onClose} aria-label="Back to session list">
+              ← Back
+            </button>
+          )}
           <h2>{title}</h2>
           <span className="meta">{meta}</span>
         </div>
@@ -278,9 +287,14 @@ export function ChatPanel({
 
   // ── Live session / new chat: terminal (or trace) + connection state ───
   return (
-    <section className="chat-pane">
-      <div className="chat-head">
-        <h2>{title}</h2>
+      <section className="chat-pane">
+        <div className="chat-head">
+          {onClose && (
+            <button className="btn-ghost chat-back" onClick={onClose} aria-label="Back to session list">
+              ← Back
+            </button>
+          )}
+          <h2>{title}</h2>
         <span className="meta">{meta}</span>
         <div className="chat-toolbar">
           {repo ? (
