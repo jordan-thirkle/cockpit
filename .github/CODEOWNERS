@@ -1,0 +1,27 @@
+# Default owners — first reviewer for any PR touching these paths.
+# GitHub requires an approving review from a CODEOWNERS-designated path
+# on protected branches; this file helps route reviews even when the
+# branch is not protected.
+
+*       @jordan-thirkle
+
+# Docs and governance files — review by maintainer.
+/README.md       @jordan-thirkle
+/CONTRIBUTING.md @jordan-thirkle
+/AGENTS.md       @jordan-thirkle
+/SECURITY.md     @jordan-thirkle
+/CODE_OF_CONDUCT.md @jordan-thirkle
+/LICENSE         @jordan-thirkle
+/docs/           @jordan-thirkle
+/.github/        @jordan-thirkle
+
+# Core app shell and auth/session wiring.
+/src/App.tsx          @jordan-thirkle
+/src/lib/            @jordan-thirkle
+/src/components/Sidebar.tsx       @jordan-thirkle
+/src/components/SessionList.tsx   @jordan-thirkle
+/src/components/ChatPanel.tsx     @jordan-thirkle
+/src/components/OrganizePanel.tsx @jordan-thirkle
+
+# Everything else — same default owner; no path-level enforcement needed
+# for the current small team. Add owners here as the contributor base grows.
