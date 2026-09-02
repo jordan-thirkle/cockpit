@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { cockpitStore, type CockpitFolder } from "@/lib/cockpitStore";
 import type { SessionInfo } from "@/lib/hermesApi";
+import { onKeyActivate } from "@/lib/a11y";
 
 function relTime(iso: string | null): string {
   if (!iso) return "";
@@ -130,6 +131,10 @@ export function SessionList({
               key={s.id}
               className={`session${activeId === s.id ? " active" : ""}`}
               onClick={() => onOpen(s)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => onKeyActivate(e, () => onOpen(s))}
+              aria-label={`Open session ${s.title ?? "(untitled)"}`}
             >
               <div className="session-title">
                 <span className="dot" />

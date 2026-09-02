@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { repoStore, type CockpitRepo } from "@/lib/cockpitStore";
 import { showToast } from "./Toasts";
+import { onKeyActivate } from "@/lib/a11y";
 
 export function Repositories({
   onOpenRepo,
@@ -92,6 +93,9 @@ export function Repositories({
         <div
           className="folder"
           onClick={() => setLinking(true)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => onKeyActivate(e, () => setLinking(true))}
           style={{ color: "var(--muted)" }}
         >
           <span className="folder-icon">⚲</span>
@@ -130,6 +134,9 @@ export function Repositories({
           key={r.id}
           className="folder repo-row"
           onClick={() => onOpenRepo(r)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => onKeyActivate(e, () => onOpenRepo(r))}
           title={`${r.owner}/${r.name} @ ${r.branch}`}
         >
           <span className="folder-icon">{r.icon ?? "❖"}</span>
@@ -168,6 +175,9 @@ export function Repositories({
         <div
           className="folder"
           onClick={() => setAdding(true)}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => onKeyActivate(e, () => setAdding(true))}
           style={{ color: "var(--muted)" }}
         >
           <span className="folder-icon">＋</span>

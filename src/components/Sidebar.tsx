@@ -2,6 +2,7 @@ import { useState } from "react";
 import { cockpitStore, type CockpitFolder } from "@/lib/cockpitStore";
 import { ThemePicker } from "@/themes";
 import { Repositories } from "./Repositories";
+import { onKeyActivate } from "@/lib/a11y";
 import { showToast } from "./Toasts";
 
 type NavItem = { id: string; label: string; group: string };
@@ -136,6 +137,9 @@ export function Sidebar({
               <div
                 className={`nav-item${page === it.id ? " active" : ""}`}
                 onClick={() => onPage(it.id)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => onKeyActivate(e, () => onPage(it.id))}
               >
                 {it.label}
               </div>
@@ -154,6 +158,14 @@ export function Sidebar({
               onPage("organize");
               onSelect(f.id);
             }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) =>
+              onKeyActivate(e, () => {
+                onPage("organize");
+                onSelect(f.id);
+              })
+            }
           >
             <span className="folder-icon">{f.icon ?? "▦"}</span>
             <span className="folder-name">{f.name}</span>
@@ -187,6 +199,9 @@ export function Sidebar({
           <div
             className="folder"
             onClick={() => setCreating(true)}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => onKeyActivate(e, () => setCreating(true))}
             style={{ color: "var(--muted)" }}
           >
             <span className="folder-icon">＋</span>
