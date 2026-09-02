@@ -17,7 +17,6 @@ import { Login } from "./components/Login";
 import { Sidebar } from "./components/Sidebar";
 import { SessionList } from "./components/SessionList";
 import { ChatPanel } from "./components/ChatPanel";
-import { ControlCenter } from "./components/ControlCenter";
 import { ToastHost, showToast, runMutation } from "./components/Toasts";
 import { WorkspacePanel } from "./components/WorkspacePanel";
 import { MemoryPanel } from "./components/MemoryPanel";
@@ -45,24 +44,60 @@ const ModelInfoPage = lazy(() =>
 // Hermes's own solved dashboard pages, vendored into src/hermes/vendor and
 // hosted by a thin provider/router adapter (integrate, don't rebuild).
 import { HermesModelsPage } from "@/hermes/HermesPages";
-import {
-  AnalyticsUsagePage,
-  AnalyticsModelsPage,
-  ConfigPage,
-  CronPage,
-  McpPage,
-  PluginsPage,
-  SkillsPage,
-  EnvPage,
-  FilesPage,
-  LogsPage,
-  WebhooksPage,
-  PairingPage,
-  ProfilesPage,
-  SystemPage,
-  DocsPage,
-  ChannelsPage,
-} from "@/components/Pages";
+// Hermes dashboard pages (endpoint-backed) — all live in one module, lazy-
+// loaded as a single chunk so the 766-line Pages module (plus ui.tsx and
+// controlCenterContent.json) stays out of the entry bundle.
+const AnalyticsUsagePage = lazy(() =>
+  import("./components/Pages").then((m) => ({ default: m.AnalyticsUsagePage })),
+);
+const AnalyticsModelsPage = lazy(() =>
+  import("./components/Pages").then((m) => ({ default: m.AnalyticsModelsPage })),
+);
+const ConfigPage = lazy(() =>
+  import("./components/Pages").then((m) => ({ default: m.ConfigPage })),
+);
+const CronPage = lazy(() =>
+  import("./components/Pages").then((m) => ({ default: m.CronPage })),
+);
+const McpPage = lazy(() =>
+  import("./components/Pages").then((m) => ({ default: m.McpPage })),
+);
+const PluginsPage = lazy(() =>
+  import("./components/Pages").then((m) => ({ default: m.PluginsPage })),
+);
+const SkillsPage = lazy(() =>
+  import("./components/Pages").then((m) => ({ default: m.SkillsPage })),
+);
+const EnvPage = lazy(() =>
+  import("./components/Pages").then((m) => ({ default: m.EnvPage })),
+);
+const FilesPage = lazy(() =>
+  import("./components/Pages").then((m) => ({ default: m.FilesPage })),
+);
+const LogsPage = lazy(() =>
+  import("./components/Pages").then((m) => ({ default: m.LogsPage })),
+);
+const WebhooksPage = lazy(() =>
+  import("./components/Pages").then((m) => ({ default: m.WebhooksPage })),
+);
+const PairingPage = lazy(() =>
+  import("./components/Pages").then((m) => ({ default: m.PairingPage })),
+);
+const ProfilesPage = lazy(() =>
+  import("./components/Pages").then((m) => ({ default: m.ProfilesPage })),
+);
+const SystemPage = lazy(() =>
+  import("./components/Pages").then((m) => ({ default: m.SystemPage })),
+);
+const DocsPage = lazy(() =>
+  import("./components/Pages").then((m) => ({ default: m.DocsPage })),
+);
+const ChannelsPage = lazy(() =>
+  import("./components/Pages").then((m) => ({ default: m.ChannelsPage })),
+);
+const ControlCenter = lazy(() =>
+  import("./components/ControlCenter").then((m) => ({ default: m.ControlCenter })),
+);
 // Cockpit-origin panels — code-split so they don't bloat the initial entry chunk.
 const AchievementsPage = lazy(() =>
   import("./components/AchievementsPage").then((m) => ({ default: m.AchievementsPage })),
