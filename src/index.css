@@ -396,6 +396,78 @@ a { color: var(--signal-soft, var(--signal)); }
 }
 .btn-primary:hover { filter: brightness(1.06); }
 
+/* ── Ended-session view + transcript ─────────────────────────────────── */
+.session-ended-banner {
+  padding: 9px 18px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
+}
+.session-ended-banner strong { color: var(--ink); }
+
+.session-ended-actions {
+  display: flex; gap: 8px; padding: 10px 18px;
+  border-top: 1px solid var(--line); flex-wrap: wrap;
+}
+
+.transcript { display: flex; flex-direction: column; gap: 0; }
+
+.msg {
+  border-top: 1px solid var(--line);
+  padding: 8px 18px;
+}
+.msg:first-child { border-top: none; }
+.msg-user { background: color-mix(in srgb, var(--surface-2) 60%, transparent); }
+.msg-assistant { background: var(--paper); }
+.msg-system { background: color-mix(in srgb, var(--muted) 8%, transparent); }
+.msg-tool { background: color-mix(in srgb, var(--chip) 50%, transparent); }
+
+.msg-role {
+  display: block;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--muted);
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+.msg-body {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.loading-state {
+  padding: 28px 18px; text-align: center; color: var(--muted); font-size: 13px;
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+}
+.loading-state::before {
+  content: ""; width: 11px; height: 11px; flex: 0 0 auto;
+  border: 2px solid var(--line); border-top-color: var(--signal);
+  border-radius: 50%; animation: cs-spin .7s linear infinite;
+}
+@keyframes cs-spin { to { transform: rotate(360deg); } }
+
+.error-state {
+  padding: 12px 18px; font-size: 13px; color: var(--signal);
+  background: color-mix(in srgb, var(--signal) 6%, transparent);
+  border-top: 1px solid var(--line);
+}
+.empty-state {
+  padding: 28px 18px; text-align: center; color: var(--muted); font-size: 13px;
+}
+
+.ws-banner {
+  padding: 6px 18px;
+  background: color-mix(in srgb, var(--warn) 10%, transparent);
+  border-bottom: 1px solid var(--warn);
+  color: var(--warn);
+  font-size: 12px;
+}
+
 /* G12 — MCP "Disable" must read as a neutral/ghost action, never as an
    enabled state. Green (--ok / success) is reserved for STATUS DOTS only. */
 button.text-success { color: var(--muted); background-color: transparent; border-color: var(--line); }

@@ -7,6 +7,7 @@ import {
   deleteSession,
   archiveSession,
   exportSession,
+  createSession,
   type SessionInfo,
 } from "@/lib/hermesApi";
 import { cockpitStore } from "@/lib/cockpitStore";
@@ -81,6 +82,23 @@ export function App() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [query, setQuery] = useState("");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  // Transition to a fresh new-chat terminal (used by the ended-session view
+  // and the SessionList "New chat" affordance — both want the same outcome).
+  const [newChatSession, setNewChatSession] = useState<SessionInfo | null>(null);
+  const handleNewChat = async () => {
+    setNewChat(true);
+    setActiveSession(null);
+    setActiveRepo(null);
+    try {
+      const { session_id } = await createSession();
+      const all = await getSessions(100, 0, "recent");
+      const found = all.sessions.find((s) => s.id === session_id);
+      setNewChatSession(found ?? { id: session_id } as SessionInfo);
+    } catch {
+      setNewChatSession(null);
+    }
+  };
 
   // ── auth gate ──────────────────────────────────────────────────────────
   useEffect(() => {
@@ -287,9 +305,9 @@ export function App() {
         <ControlCenter onClose={() => setPage("organize")} />
       )}
 
-      {activeSession && <ChatPanel session={activeSession} />}
-      {activeRepo && <ChatPanel repo={activeRepo} />}
-      {newChat && !activeSession && !activeRepo && <ChatPanel session={null} />}
+      {activeSession && <ChatPanel session={activeSession} onNewChat={handleNewChat} />}
+      {activeRepo && <ChatPanel repo={activeRepo} onNewChat={handleNewChat} />}
+      {newChat && !activeSession && !activeRepo && <ChatPanel session={newChatSession ?? null} onNewChat={handleNewChat} />}
       </Suspense>
     </div>
     </ThemeProvider>

@@ -3,19 +3,40 @@ import { Terminal } from "@xterm/xterm";
 import { FitAddon } from "@xterm/addon-fit";
 import { WebLinksAddon } from "@xterm/addon-web-links";
 import "@xterm/xterm/css/xterm.css";
-import { buildPtyWsUrl, generateChannelId, type SessionInfo } from "@/lib/hermesApi";
+import {
+  buildPtyWsUrl,
+  generateChannelId,
+  getSessionMessages,
+  type SessionInfo,
+  type SessionMessage,
+} from "@/lib/hermesApi";
 import { type CockpitRepo } from "@/lib/cockpitStore";
 import { TraceView } from "./TraceView";
 import { ModelPicker } from "./ModelPicker";
 
-const REPO_CONTEXT_PREFIX = "\x1b[90m"; // bright black / muted
+const REPO_CONTEXT_PREFIX = "\x1b[90m";
+
+// WebSocket close codes we discriminate for UX.
+const WS_NORMAL = 1000; // clean close
+const WS_GOING_AWAY = 1001;
+const WS_ABNORMAL = 1006; // dropped, no close frame (network / crash)
+const WS_SERVER_ERROR = 1011;
+
+/** Codes where the drop is plausibly transient and a reconnect is worth offering. */
+function isTransientClose(code: number | null): boolean {
+  return code === WS_ABNORMAL || code === WS_SERVER_ERROR || code === WS_GOING_AWAY;
+}
 
 export function ChatPanel({
   session,
   repo,
+  onNewChat,
+  sessionId,
 }: {
   session?: SessionInfo | null;
   repo?: CockpitRepo | null;
+  onNewChat?: () => void;
+  sessionId?: string | null;
 }) {
   const hostRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -24,16 +45,50 @@ export function ChatPanel({
   const [tab, setTab] = useState<"terminal" | "trace">("terminal");
   const [showModelPicker, setShowModelPicker] = useState(false);
 
+  const isEnded = !!(session?.ended_at);
+
+  // Ended-session transcript.
+  const [messages, setMessages] = useState<SessionMessage[] | null>(null);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+
+  // Live-connection state.
+  const [closeCode, setCloseCode] = useState<number | null>(null);
+  const [wsBanner, setWsBanner] = useState<string | null>(null);
+  const [reconnectNonce, setReconnectNonce] = useState(0);
+
+  // Fetch stored messages for ended sessions (read-only history).
+  useEffect(() => {
+    if (!isEnded || !session?.id) return;
+    const run = async () => {
+      setLoadingMessages(true);
+      setFetchError(null);
+      try {
+        const res = await getSessionMessages(session.id, "oldest", 500);
+        setMessages(res.messages ?? []);
+      } catch (err) {
+        setFetchError(
+          err instanceof Error ? err.message : "Could not load session history.",
+        );
+        setMessages(null);
+      } finally {
+        setLoadingMessages(false);
+      }
+    };
+    run();
+  }, [isEnded, session?.id]);
+
+  // Live PTY tunnel. Skipped entirely for ended sessions (no live agent process).
   useEffect(() => {
     const host = hostRef.current;
     const wrap = wrapRef.current;
     if (!host || !wrap) return;
+    if (isEnded) return;
 
     const term = new Terminal({
       fontFamily: "var(--font-mono), monospace",
       fontSize: 13,
       cursorBlink: true,
-      // Theme-aware: dark cockpit palette (readable on the surface-2 terminal bg).
       theme: {
         background: "#1e1c19",
         foreground: "#ece7dd",
@@ -68,19 +123,17 @@ export function ChatPanel({
 
     let disposed = false;
     const channel = generateChannelId();
-    buildPtyWsUrl(channel, { resume: session?.id ?? null })
+
+    buildPtyWsUrl(channel, { resume: sessionId ?? session?.id ?? null })
       .then((url) => {
         if (disposed) return;
         const ws = new WebSocket(url);
         ws.binaryType = "arraybuffer";
         wsRef.current = ws;
         ws.onopen = () => {
+          setWsBanner(null);
           term.focus();
           ws.send(`\x1b[RESIZE:${term.cols};${term.rows}]`);
-          // Seed repo context into the terminal if this is a repo workspace.
-          // This writes a visible, honest context block — NOT a hidden prompt.
-          // The Hermes agent behind the PTY reads the visible terminal text
-          // like any other user input, so the context is real, not faked.
           if (repo) {
             const ctx = [
               `${REPO_CONTEXT_PREFIX}// ── Cockpit repo workspace ──────────────────────`,
@@ -101,10 +154,26 @@ export function ChatPanel({
             typeof e.data === "string" ? e.data : new Uint8Array(e.data);
           term.write(data as any);
         };
-        ws.onclose = () => term.write("\r\n\x1b[90m[connection closed]\x1b[0m\r\n");
+        ws.onclose = (e) => {
+          setCloseCode(e.code);
+          if (e.code === WS_NORMAL) {
+            term.write(
+              "\r\n\x1b[90m[connection closed — session ended]\x1b[0m\r\n",
+            );
+          } else if (isTransientClose(e.code)) {
+            setWsBanner(
+              `Connection dropped (code ${e.code}). The terminal is disconnected — reconnect below.`,
+            );
+          } else {
+            setWsBanner(`Connection closed (code ${e.code}).`);
+          }
+        };
         term.onData((d) => ws.send(d));
       })
-      .catch((err) => term.write(`\r\n\x1b[91m[connect failed: ${err}]\x1b[0m\r\n`));
+      .catch((err) => {
+        setWsBanner(`Connect failed: ${err}`);
+        term.write(`\r\n\x1b[91m[connect failed: ${err}]\x1b[0m\r\n`);
+      });
 
     const ro = new ResizeObserver(doFit);
     ro.observe(wrap);
@@ -116,18 +185,95 @@ export function ChatPanel({
       ro.disconnect();
       wsRef.current?.close();
       term.dispose();
+      setCloseCode(null);
     };
-  }, [session?.id, repo?.id]);
+  }, [isEnded, session?.id, repo?.id, reconnectNonce]);
+
+  const doReconnect = () => setReconnectNonce((n) => n + 1);
 
   const title = repo ? `${repo.owner}/${repo.name}` : session?.title ?? "New chat";
   const meta = repo
     ? `GitHub · ${repo.branch}`
-    : session?.model ?? session?.source ?? "";
+    : isEnded
+      ? session?.model ? `ended · ${session.model}` : "ended"
+      : session?.model ?? session?.source ?? "";
 
   const openOnGitHub = () => {
     if (repo) window.open(`https://github.com/${repo.owner}/${repo.name}`, "_blank");
   };
 
+  // ── Ended-session view: read-only transcript + honest affordances ──────
+  if (isEnded) {
+    return (
+      <section className="chat-pane">
+        <div className="chat-head">
+          <h2>{title}</h2>
+          <span className="meta">{meta}</span>
+        </div>
+
+        <div className="session-ended-banner">
+          <strong>Session ended</strong>
+          {session?.updated_at
+            ? ` · last activity ${new Date(session.updated_at).toLocaleString()}`
+            : ""}
+          {session?.message_count ? ` · ${session.message_count} messages` : ""}
+          {session?.tool_call_count && session.tool_call_count > 0
+            ? ` · ${session.tool_call_count} tool calls`
+            : ""}
+        </div>
+
+        <div className="term-wrap" ref={wrapRef}>
+          {loadingMessages ? (
+            <div className="loading-state">Loading session history…</div>
+          ) : fetchError ? (
+            <div className="error-state">{fetchError}</div>
+          ) : messages && messages.length ? (
+            <div className="transcript">
+              {messages.map((m, i) => (
+                <div key={i} className={`msg msg-${m.role}`}>
+                  <span className="msg-role">
+                    {m.role}
+                    {m.tool_name ? ` · ${m.tool_name}` : ""}
+                    {m.tool_call_id ? ` · ${m.tool_call_id}` : ""}
+                  </span>
+                  <div className="msg-body">
+                    {m.content ?? "(no content)"}
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="empty-state">No stored messages for this session.</div>
+          )}
+        </div>
+
+        <div className="session-ended-actions">
+          <button className="btn-primary" onClick={onNewChat}>
+            Start new chat
+          </button>
+          {repo ? (
+            <button className="btn-ghost" onClick={openOnGitHub}>
+              Open on GitHub
+            </button>
+          ) : (
+            <button
+              className="btn-ghost"
+              onClick={() => setShowModelPicker(true)}
+              title="Switch the default model for new chats"
+            >
+              Model
+            </button>
+          )}
+        </div>
+
+        {showModelPicker && (
+          <ModelPicker onClose={() => setShowModelPicker(false)} />
+        )}
+      </section>
+    );
+  }
+
+  // ── Live session / new chat: terminal (or trace) + connection state ───
   return (
     <section className="chat-pane">
       <div className="chat-head">
@@ -136,7 +282,11 @@ export function ChatPanel({
         <div className="chat-toolbar">
           {repo ? (
             <>
-              <button className="btn-ghost" onClick={openOnGitHub} title="Open on GitHub">
+              <button
+                className="btn-ghost"
+                onClick={openOnGitHub}
+                title="Open on GitHub"
+              >
                 GitHub
               </button>
               <button
@@ -152,13 +302,8 @@ export function ChatPanel({
                 New PR
               </button>
               <button
-                className="btn-ghost start-work-btn"
+                className={`btn-ghost start-work-btn`}
                 onClick={() => {
-                  // The repo workspace is already open with context seeded in
-                  // the PTY (see ws.onopen above). This button copies a clear
-                  // next-step prompt so the user can paste it into the terminal
-                  // and the agent clones/inspects the repo. The terminal is the
-                  // real work surface.
                   const prompt = `Start work on ${repo?.owner}/${repo?.name}. Clone or fetch the repo if it's not already on disk, confirm the ${repo?.branch} branch, then ask what to work on. Never push to main.`;
                   try {
                     void navigator.clipboard?.writeText(prompt);
@@ -195,8 +340,19 @@ export function ChatPanel({
               </button>
             </>
           )}
+          {closeCode !== null && isTransientClose(closeCode) && (
+            <button
+              className="btn-ghost"
+              onClick={doReconnect}
+              title="Reconnect terminal"
+            >
+              Reconnect
+            </button>
+          )}
         </div>
       </div>
+
+      {wsBanner && <div className="ws-banner">{wsBanner}</div>}
 
       {repo && (
         <div className="repo-banner">
@@ -223,7 +379,9 @@ export function ChatPanel({
         </div>
       )}
 
-      {showModelPicker && <ModelPicker onClose={() => setShowModelPicker(false)} />}
+      {showModelPicker && (
+        <ModelPicker onClose={() => setShowModelPicker(false)} />
+      )}
     </section>
   );
 }

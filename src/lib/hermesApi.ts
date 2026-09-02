@@ -449,3 +449,15 @@ export async function getDocFile(rel: string): Promise<DocFileContent | null> {
  *  fetcher that returns the tree. New docs-aware panels call getDocsTree /
  *  getDocFile directly. */
 export const getDocs = () => getDocsTree();
+
+/**
+ * Create a fresh chat session on the backend (JSON-RPC sidecar over /api/ws,
+ * same path stock Hermes ChatSidebar uses). Returns the new session id.
+ * This is what "New chat" in the cockpit hits so the session shows up in the
+ * session list and can be resumed later, rather than spawning an anonymous
+ * PTY that never gets a persisted row.
+ */
+export async function createSession(): Promise<{ session_id: string }> {
+  const { createSession: rpcCreate } = await import("./gateway");
+  return rpcCreate();
+}
