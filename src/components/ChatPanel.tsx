@@ -234,6 +234,12 @@ export function ChatPanel({
           }
         };
         ws.onerror = () => {
+          // New-chat initial connect failure — show banner instead of silent blank
+          if (!isEnded && sessionId && !session?.id) {
+            setWsBanner(`Connect failed: WebSocket error — the terminal could not open.`);
+          } else {
+            setWsBanner(`Connect failed: WebSocket error — the terminal could not open.`);
+          }
           setConnectionState("disconnected");
         };
         term.onData((d) => ws.send(d));
