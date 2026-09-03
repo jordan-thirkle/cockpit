@@ -265,7 +265,51 @@ export const LogsPage = () => (
   <ApiPage title="Logs" subtitle="Recent runtime logs" fetcher={() => getLogs(200)} redact={redactSecrets} />
 );
 export const WebhooksPage = () => (
-  <ApiPage title="Webhooks" subtitle="Registered webhook subscriptions" fetcher={getWebhooks} redact={redactSecrets} />
+  <ApiPage
+    title="Webhooks"
+    subtitle="Registered webhook subscriptions"
+    fetcher={getWebhooks}
+    render={(d: any) => {
+      const list = Array.isArray(d) ? d : d?.webhooks ?? d?.entries ?? [];
+      const items = Array.isArray(list) ? list : [];
+      return (
+        <div className="card-grid webhook-grid">
+          {items.length === 0 && <div className="page-state">No webhooks configured.</div>}
+          {items.map((w: any, i: number) => (
+            <div className="info-card webhook-card" key={w?.id ?? w?.name ?? i}>
+              <div className="webhook-card-header">
+                <span className="webhook-icon">🔗</span>
+                <div className="webhook-card-title-row">
+                  <div className="info-card-title webhook-title">{w?.name ?? w?.id ?? "(unnamed)"}</div>
+                  {w?.enabled === false && <span className="webhook-badge disabled">Inactive</span>}
+                  {w?.enabled !== false && <span className="webhook-badge enabled">Active</span>}
+                </div>
+              </div>
+              <div className="info-card-sub webhook-url">
+                {w?.url && <code className="webhook-url-code">{w.url}</code>}
+              </div>
+              {w?.events && Array.isArray(w.events) && w.events.length > 0 && (
+                <div className="webhook-events">
+                  {w.events.map((e: string, ei: number) => (
+                    <span key={ei} className="webhook-event-tag">{e}</span>
+                  ))}
+                </div>
+              )}
+              <div className="webhook-meta">
+                {w?.secret && <span className="webhook-tag secret">🔐 Secret configured</span>}
+                {w?.createdAt && <span className="webhook-tag created">Created: {new Date(w.createdAt).toLocaleDateString()}</span>}
+              </div>
+              <div className="webhook-actions">
+                <button className="btn-ghost btn-sm" title="Test webhook">Test</button>
+                <button className="btn-ghost btn-sm" title="Edit webhook">Edit</button>
+                <button className="btn-ghost btn-sm" title="View raw JSON">JSON</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }}
+  />
 );
 export const PairingPage = () => (
   <ApiPage title="Pairing" subtitle="Device / DM authorization" fetcher={getPairing} redact={redactSecrets} />
@@ -714,19 +758,175 @@ export const MemoryProvidersPage = () => (
   <ApiPage title="Memory Providers" fetcher={getMemoryProviders} redact={redactSecrets} />
 );
 export const CronPage = () => (
-  <ApiPage title="Cron Jobs" subtitle="Scheduled autonomous jobs" fetcher={getCronJobs} redact={redactSecrets} />
+  <ApiPage
+    title="Cron Jobs"
+    subtitle="Scheduled autonomous jobs"
+    fetcher={getCronJobs}
+    render={(d: any) => {
+      const list = Array.isArray(d) ? d : d?.jobs ?? d?.entries ?? [];
+      const items = Array.isArray(list) ? list : [];
+      return (
+        <div className="card-grid cron-grid">
+          {items.length === 0 && <div className="page-state">No cron jobs configured.</div>}
+          {items.map((j: any, i: number) => (
+            <div className="info-card cron-card" key={j?.name ?? j?.id ?? i}>
+              <div className="cron-card-header">
+                <span className="cron-icon">⏰</span>
+                <div className="cron-card-title-row">
+                  <div className="info-card-title cron-title">{j?.name ?? j?.id ?? "(unnamed)"}</div>
+                  {j?.enabled === false && <span className="cron-badge disabled">Paused</span>}
+                  {j?.enabled !== false && <span className="cron-badge enabled">Active</span>}
+                </div>
+              </div>
+              <div className="info-card-sub cron-schedule">
+                {j?.schedule && <span className="cron-tag schedule">📅 {j.schedule}</span>}
+                {j?.timezone && <span className="cron-tag tz">🌍 {j.timezone}</span>}
+              </div>
+              {j?.lastRun && (
+                <div className="info-card-sub cron-last-run">
+                  Last run: {new Date(j.lastRun).toLocaleString()}
+                  {j?.lastRunStatus && <span className={`cron-status ${j.lastRunStatus}`}>({j.lastRunStatus})</span>}
+                </div>
+              )}
+              <div className="cron-actions">
+                <button className="btn-ghost btn-sm" title="Run now">Run</button>
+                <button className="btn-ghost btn-sm" title="Edit cron job">Edit</button>
+                <button className="btn-ghost btn-sm" title="View raw JSON">JSON</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }}
+  />
 );
 export const McpPage = () => (
-  <ApiPage title="MCP Servers" subtitle="Model Context Protocol servers" fetcher={getMcpServers} redact={redactSecrets} />
+  <ApiPage
+    title="MCP Servers"
+    subtitle="Model Context Protocol servers"
+    fetcher={getMcpServers}
+    render={(d: any) => {
+      const list = Array.isArray(d) ? d : d?.servers ?? d?.entries ?? [];
+      const items = Array.isArray(list) ? list : [];
+      return (
+        <div className="card-grid mcp-grid">
+          {items.length === 0 && <div className="page-state">No MCP servers configured.</div>}
+          {items.map((s: any, i: number) => (
+            <div className="info-card mcp-card" key={s?.name ?? s?.id ?? i}>
+              <div className="mcp-card-header">
+                <span className="mcp-icon">🔌</span>
+                <div className="mcp-card-title-row">
+                  <div className="info-card-title mcp-title">{s?.name ?? s?.id ?? "(unnamed)"}</div>
+                  {s?.status === "connected" && <span className="mcp-badge connected">Connected</span>}
+                  {s?.status === "disconnected" && <span className="mcp-badge disconnected">Disconnected</span>}
+                  {s?.status === "error" && <span className="mcp-badge error">Error</span>}
+                  {!s?.status && <span className="mcp-badge unknown">Unknown</span>}
+                </div>
+              </div>
+              <div className="info-card-sub mcp-transport">
+                {s?.transport && <span className="mcp-tag">{s.transport}</span>}
+                {s?.command && <span className="mcp-tag cmd">{s.command}</span>}
+                {s?.url && <span className="mcp-tag url">{s.url}</span>}
+              </div>
+              {s?.tools && Array.isArray(s.tools) && s.tools.length > 0 && (
+                <div className="mcp-tools">
+                  {s.tools.map((tool: any, ti: number) => (
+                    <span key={ti} className="tool-tag">{typeof tool === "string" ? tool : tool?.name ?? "tool"}</span>
+                  ))}
+                </div>
+              )}
+              <div className="mcp-actions">
+                <button className="btn-ghost btn-sm" title="Reconnect">Reconnect</button>
+                <button className="btn-ghost btn-sm" title="Edit MCP server">Edit</button>
+                <button className="btn-ghost btn-sm" title="View raw JSON">JSON</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }}
+  />
 );
 export const ChannelsPage = () => (
   <ApiPage title="Channels" subtitle="Connected chat surfaces (Telegram, Discord, …)" fetcher={getMessagingPlatforms} redact={redactSecrets} />
 );
 export const ToolsetsPage = () => (
-  <ApiPage title="Toolsets" subtitle="Enabled tool categories" fetcher={getToolsets} redact={redactSecrets} />
+  <ApiPage
+    title="Toolsets"
+    subtitle="Enabled tool categories"
+    fetcher={getToolsets}
+    render={(d: any) => {
+      const list = Array.isArray(d) ? d : d?.toolsets ?? d?.entries ?? [];
+      const items = Array.isArray(list) ? list : [];
+      return (
+        <div className="card-grid toolset-grid">
+          {items.length === 0 && <div className="page-state">No toolsets configured.</div>}
+          {items.map((t: any, i: number) => (
+            <div className="info-card toolset-card" key={t?.name ?? t?.id ?? i}>
+              <div className="toolset-card-header">
+                <span className="toolset-icon">🔧</span>
+                <div className="toolset-card-title-row">
+                  <div className="info-card-title toolset-title">{t?.name ?? t?.id ?? "(unnamed)"}</div>
+                  {t?.enabled === false && <span className="toolset-badge disabled">Disabled</span>}
+                  {t?.enabled !== false && <span className="toolset-badge enabled">Enabled</span>}
+                </div>
+              </div>
+              <div className="info-card-sub toolset-description">
+                {t?.description ?? t?.category ?? ""}
+              </div>
+              {t?.tools && Array.isArray(t.tools) && (
+                <div className="toolset-tools">
+                  {t.tools.map((tool: any, ti: number) => (
+                    <span key={ti} className="tool-tag">{typeof tool === "string" ? tool : tool?.name ?? "tool"}</span>
+                  ))}
+                </div>
+              )}
+              <div className="toolset-actions">
+                <button className="btn-ghost btn-sm" title="Configure toolset">Configure</button>
+                <button className="btn-ghost btn-sm" title="View raw JSON">JSON</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }}
+  />
 );
 export const ModelInfoPage = () => (
-  <ApiPage title="Model Info" fetcher={getModelInfo} redact={redactSecrets} />
+  <ApiPage
+    title="Model Info"
+    subtitle="Configured models & providers"
+    fetcher={getModelInfo}
+    render={(d: any) => {
+      const list = Array.isArray(d) ? d : d?.models ?? d?.entries ?? [];
+      const items = Array.isArray(list) ? list : [];
+      return (
+        <div className="card-grid model-grid">
+          {items.length === 0 && <div className="page-state">No models configured.</div>}
+          {items.map((m: any, i: number) => (
+            <div className="info-card model-card" key={m?.name ?? m?.id ?? i}>
+              <div className="model-card-header">
+                <span className="model-icon">🤖</span>
+                <div className="model-card-title-row">
+                  <div className="info-card-title model-title">{m?.name ?? m?.id ?? "(unnamed)"}</div>
+                  {m?.provider && <span className="model-provider">{m.provider}</span>}
+                </div>
+              </div>
+              <div className="info-card-sub model-meta">
+                {m?.model && <span className="model-tag">Model: {m.model}</span>}
+                {m?.context && <span className="model-tag">Context: {m.context.toLocaleString()}</span>}
+                {m?.temperature != null && <span className="model-tag">Temp: {m.temperature}</span>}
+              </div>
+              <div className="model-actions">
+                <button className="btn-ghost btn-sm" title="Edit model">Edit</button>
+                <button className="btn-ghost btn-sm" title="View raw JSON">JSON</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }}
+  />
 );
 export const AnalyticsUsagePage = () => (
   <ApiPage title="Analytics · Usage" subtitle="Usage over time" fetcher={() => getAnalyticsUsage(30)} redact={redactSecrets} />
@@ -745,13 +945,29 @@ export const SkillsPage = () => (
       const list = Array.isArray(d) ? d : d?.skills ?? d?.entries ?? [];
       const items = Array.isArray(list) ? list : [];
       return (
-        <div className="card-grid">
+        <div className="card-grid skills-grid">
           {items.length === 0 && <div className="page-state">No skills returned.</div>}
           {items.map((s: any, i: number) => (
-            <div className="info-card" key={s?.name ?? i}>
-              <div className="info-card-title">{s?.name ?? "(unnamed)"}</div>
-              <div className="info-card-sub">
+            <div className="info-card skill-card" key={s?.name ?? i}>
+              <div className="skill-card-header">
+                <span className="skill-icon">🧠</span>
+                <div className="skill-card-title-row">
+                  <div className="info-card-title skill-title">{s?.name ?? "(unnamed)"}</div>
+                  {s?.version && <span className="skill-version">{s.version}</span>}
+                </div>
+              </div>
+              <div className="info-card-sub skill-description">
                 {s?.description ?? s?.category ?? ""}
+              </div>
+              {s?.category && (
+                <div className="skill-meta">
+                  <span className="skill-tag">{s.category}</span>
+                  {s?.author && <span className="skill-tag">by {s.author}</span>}
+                </div>
+              )}
+              <div className="skill-actions">
+                <button className="btn-ghost btn-sm" title="View raw JSON">JSON</button>
+                <button className="btn-ghost btn-sm" title="Open skill folder">Open</button>
               </div>
             </div>
           ))}
