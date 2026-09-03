@@ -116,7 +116,7 @@ export function ThreeDViewer() {
       {!loading && !error && sessions.length === 0 && (
         <EmptyState
           title="No sessions to plot"
-          hint="Start a chat from Organize or the terminal — each session becomes a node here."
+          hint="Start a chat from Chats or the terminal — each session becomes a node here."
         />
       )}
 

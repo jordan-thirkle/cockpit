@@ -966,9 +966,7 @@ export const SkillsPage = () => (
                 </div>
               )}
               <div className="skill-actions">
-                <button className="btn-ghost btn-sm" title="View raw JSON">JSON</button>
-                <button className="btn-ghost btn-sm" title="Open skill folder">Open</button>
-              </div>
+                <button className="btn-ghost btn-sm" title="Copy JSON to clipboard">JSON</button>\n                <button className="btn-ghost btn-sm" title="Open skill page" onClick={() => window.location.href = `/skills/${s?.name}`}>Open</button>\n              </div>
             </div>
           ))}
         </div>

@@ -122,7 +122,7 @@ export async function getAuthMe(): Promise<{ user_id?: string } | null> {
 
 // ── Sessions ────────────────────────────────────────────────────────────
 // Backend caps the /api/sessions LIST limit at 100 (422 if exceeded). Clamp
-// here so callers can't accidentally 422 the Organize / 3D Graph panels.
+// here so callers can't accidentally 422 the Chats / 3D Graph panels.
 const SESSIONS_LIST_MAX = 100;
 export function getSessions(
   limit = SESSIONS_LIST_MAX,

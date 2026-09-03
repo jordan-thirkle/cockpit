@@ -8,7 +8,7 @@ import { showToast } from "./Toasts";
 type NavItem = { id: string; label: string; group: string };
 
 const PAGES: NavItem[] = [
-  { id: "organize", label: "Organize", group: "Cockpit" },
+  { id: "chats", label: "Chats", group: "Cockpit" },
   { id: "control", label: "Control Center", group: "Cockpit" },
   { id: "3d", label: "3D Session Graph", group: "Cockpit" },
   { id: "achievements", label: "Achievements", group: "Cockpit" },

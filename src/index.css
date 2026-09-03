@@ -1442,3 +1442,30 @@ button.text-success { color: var(--muted); background-color: transparent; border
     grid-template-columns: 1fr;
   }
 }
+/* ── Session list responsive fixes ──────────────────────────── */
+@media (max-width: 768px) {
+  .session {
+    min-width: 0;
+    padding: 8px 6px;
+  }
+  .session-title {
+    font-size: 13px;
+  }
+  .session-meta {
+    font-size: 11px;
+  }
+  .src-badge {
+    font-size: 9px;
+    padding: 2px 5px;
+  }
+  .session-actions .sa-btn {
+    width: 14px; height: 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .session-folder-tag select {
+    width: 100%;
+  }
+}
+
