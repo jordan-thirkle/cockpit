@@ -50,11 +50,13 @@ export function ApiPage({
   // arrow `() => getX(30)` recreated every render) does NOT retrigger the effect
   // and cause an infinite refetch loop. The effect runs on mount + reloadKey.
   const fetcherRef = useRef(fetcher);
-  fetcherRef.current = fetcher;
+
+  useEffect(() => {
+    fetcherRef.current = fetcher;
+  }, [fetcher]);
 
   useEffect(() => {
     let alive = true;
-    setState("loading");
     fetcherRef.current()
       .then((d) => {
         if (!alive) return;

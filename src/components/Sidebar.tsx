@@ -71,6 +71,16 @@ export function Sidebar({
       )
     : PAGES;
 
+  // Group pages by group for rendering
+  const groupedPages = visiblePages.reduce<Record<string, typeof visiblePages>>(
+    (acc, page) => {
+      if (!acc[page.group]) acc[page.group] = [];
+      acc[page.group].push(page);
+      return acc;
+    },
+    {}
+  );
+
   const submitNew = async () => {
     const n = name.trim();
     if (!n) return;
@@ -83,8 +93,6 @@ export function Sidebar({
       showToast(err instanceof Error ? err.message : String(err));
     }
   };
-
-  let lastGroup = "";
 
   return (
     <>
@@ -128,24 +136,24 @@ export function Sidebar({
         {visiblePages.length === 0 && (
           <div className="nav-empty">No panel matches “{navQuery}”</div>
         )}
-        {visiblePages.map((it) => {
-          const showGroup = it.group !== lastGroup;
-          lastGroup = it.group;
-          return (
-            <div key={it.id}>
-              {showGroup && <div className="nav-group">{it.group}</div>}
-              <div
-                className={`nav-item${page === it.id ? " active" : ""}`}
-                onClick={() => onPage(it.id)}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => onKeyActivate(e, () => onPage(it.id))}
-              >
-                {it.label}
+        {Object.entries(groupedPages).map(([group, pages]) => (
+          <>
+            <div className="nav-group">{group}</div>
+            {pages.map((it) => (
+              <div key={it.id}>
+                <div
+                  className={`nav-item${page === it.id ? " active" : ""}`}
+                  onClick={() => onPage(it.id)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => onKeyActivate(e, () => onPage(it.id))}
+                >
+                  {it.label}
+                </div>
               </div>
-            </div>
-          );
-        })}
+            ))}
+          </>
+        ))}
 
         <div className="nav-group">Folders</div>
         {folders.map((f: CockpitFolder) => (

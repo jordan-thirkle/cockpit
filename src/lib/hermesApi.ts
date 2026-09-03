@@ -378,10 +378,6 @@ export const getModelInfo = () => fetchJSON<any>("/api/model/info");
 export const getPairing = () => fetchJSON<any>("/api/pairing");
 export const getCronJobs = () => fetchJSON<any>("/api/cron/jobs");
 export const getWebhooks = () => fetchJSON<any>("/api/webhooks");
-export const getFiles = () =>
-  fetchJSON<any>("/api/fs/list?path=.");
-export const getLogs = (n = 200) =>
-  fetchJSON<any>(`/api/logs?n=${n}`);
 export const getPlugins = () => fetchJSON<any>("/api/dashboard/plugins");
 export const getProfiles = () => fetchJSON<any>("/api/profiles");
 export const getAchievements = () =>
@@ -389,6 +385,10 @@ export const getAchievements = () =>
 export const getSystem = () => fetchJSON<any>("/api/system/stats");
 export const getMemoryProviders = () =>
   fetchJSON<any>("/api/memory");
+export const getFiles = () =>
+  fetchJSON<any>("/api/fs/list?path=.");
+export const getLogs = (n = 200) =>
+  fetchJSON<any>(`/api/logs?n=${n}`);
 
 // ── Docs ──────────────────────────────────────────────────────────────────────
 // Hermes ships a real docs tree under <HERMES_HOME>/docs/ (ADRs, design docs,
@@ -457,6 +457,192 @@ export async function getDocFile(rel: string): Promise<DocFileContent | null> {
  *  getDocFile directly. */
 export const getDocs = () => getDocsTree();
 
+// ── JsonRpcGatewayClient (singleton) ─────────────────────────────────────
+// Minimal JSON-RPC 2.0 client over the Hermes gateway WebSocket (/api/ws).
+// Reuses buildWsAuthParam() for auth (ticket/token modes). No external deps.
+// Handles: connect, reconnect with exponential backoff, NDJSON parsing,
+// request/response matching via id, event emission (open, close, error, message).
+
+type JsonRpcRequest<T = unknown> = {
+  jsonrpc: "2.0";
+  id: string | number;
+  method: string;
+  params?: T;
+};
+
+type GatewayEvent = "open" | "close" | "error" | "message";
+
+class JsonRpcGatewayClient {
+  private ws: WebSocket | null = null;
+  private url: string | null = null;
+  private reconnectAttempts = 0;
+  private readonly maxReconnectDelay = 30000; // 30s cap
+  private readonly baseReconnectDelay = 1000; // 1s base
+  private reconnectTimer: ReturnType<typeof setTimeout> | null = null;
+  private pending = new Map<string | number, { resolve: (v: unknown) => void; reject: (e: Error) => void }>();
+  private listeners = new Map<GatewayEvent, Set<(data?: unknown) => void>>();
+  private connecting = false;
+  private closedIntentionally = false;
+
+  private constructor() {}
+
+  static instance: JsonRpcGatewayClient | null = null;
+  static getInstance(): JsonRpcGatewayClient {
+    if (!JsonRpcGatewayClient.instance) {
+      JsonRpcGatewayClient.instance = new JsonRpcGatewayClient();
+    }
+    return JsonRpcGatewayClient.instance;
+  }
+
+  on<E extends GatewayEvent>(event: E, handler: (data?: unknown) => void): () => void {
+    const set = this.listeners.get(event) ?? new Set();
+    set.add(handler);
+    this.listeners.set(event, set);
+    return () => {
+      set.delete(handler);
+    };
+  }
+
+  private emit<E extends GatewayEvent>(event: E, data?: unknown) {
+    this.listeners.get(event)?.forEach((h) => {
+      try {
+        h(data);
+      } catch {
+        /* ignore listener errors */
+      }
+    });
+  }
+
+  private async buildUrl(): Promise<string> {
+    const [name, value] = await buildWsAuthParam();
+    const qs = new URLSearchParams();
+    qs.set(name, value);
+    const proto = location.protocol === "https:" ? "wss:" : "ws:";
+    return `${proto}//${location.host}${BASE}/api/ws?${qs.toString()}`;
+  }
+
+  private scheduleReconnect() {
+    if (this.closedIntentionally || this.reconnectTimer) return;
+    const delay = Math.min(
+      this.baseReconnectDelay * Math.pow(2, this.reconnectAttempts) +
+        Math.random() * 500,
+      this.maxReconnectDelay
+    );
+    this.reconnectTimer = setTimeout(() => {
+      this.reconnectTimer = null;
+      this.connect().catch(() => {
+        /* connect() handles its own retry */
+      });
+    }, delay);
+  }
+
+  async connect(): Promise<void> {
+    if (this.ws?.readyState === WebSocket.OPEN || this.connecting) return;
+    this.connecting = true;
+    this.closedIntentionally = false;
+
+    try {
+      this.url = await this.buildUrl();
+      const ws = new WebSocket(this.url);
+      this.ws = ws;
+
+      ws.onopen = () => {
+        this.connecting = false;
+        this.reconnectAttempts = 0;
+        this.emit("open");
+      };
+
+      ws.onmessage = (event) => {
+        const text = typeof event.data === "string" ? event.data : new TextDecoder().decode(event.data);
+        // Handle NDJSON (multiple JSON objects separated by newlines)
+        for (const line of text.trim().split("\n")) {
+          if (!line) continue;
+          try {
+            const msg = JSON.parse(line);
+            if (msg && typeof msg === "object" && "id" in msg) {
+              // Response to a request
+              const pending = this.pending.get(msg.id);
+              if (pending) {
+                this.pending.delete(msg.id);
+                if ("error" in msg && msg.error) {
+                  pending.reject(new Error(msg.error.message ?? "JSON-RPC error"));
+                } else {
+                  pending.resolve(msg.result);
+                }
+              }
+            } else if (msg && typeof msg === "object" && "method" in msg) {
+              // Notification / event from server
+              this.emit("message", msg);
+            }
+          } catch {
+            /* ignore parse errors */
+          }
+        }
+      };
+
+      ws.onclose = (e) => {
+        this.connecting = false;
+        this.ws = null;
+        this.emit("close", { code: e.code, reason: e.reason });
+        if (!this.closedIntentionally) {
+          this.reconnectAttempts++;
+          this.scheduleReconnect();
+        }
+      };
+
+      ws.onerror = (e) => {
+        this.emit("error", e);
+      };
+    } catch (err) {
+      this.connecting = false;
+      this.emit("error", err);
+      if (!this.closedIntentionally) {
+        this.reconnectAttempts++;
+        this.scheduleReconnect();
+      }
+      throw err;
+    }
+  }
+
+  async request<T>(method: string, params?: unknown): Promise<T> {
+    await this.connect();
+    const id = crypto.randomUUID();
+    const request: JsonRpcRequest = { jsonrpc: "2.0", id, method, params };
+    return new Promise((resolve, reject) => {
+      this.pending.set(id, { resolve: resolve as (v: unknown) => void, reject });
+      this.ws?.send(JSON.stringify(request));
+      // Timeout after 30s
+      setTimeout(() => {
+        if (this.pending.has(id)) {
+          this.pending.delete(id);
+          reject(new Error(`JSON-RPC request timeout: ${method}`));
+        }
+      }, 30000);
+    });
+  }
+
+  close() {
+    this.closedIntentionally = true;
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer);
+      this.reconnectTimer = null;
+    }
+    this.ws?.close(1000, "Client closed");
+    this.ws = null;
+    this.pending.forEach((p) => p.reject(new Error("Gateway client closed")));
+    this.pending.clear();
+  }
+
+  isConnected(): boolean {
+    return this.ws?.readyState === WebSocket.OPEN;
+  }
+}
+
+export function getGatewayClient(): JsonRpcGatewayClient {
+  return JsonRpcGatewayClient.getInstance();
+}
+
+// ── Session creation via JSON-RPC sidecar (same path stock Hermes uses) ──
 /**
  * Create a fresh chat session on the backend (JSON-RPC sidecar over /api/ws,
  * same path stock Hermes ChatSidebar uses). Returns the new session id.
@@ -464,7 +650,11 @@ export const getDocs = () => getDocsTree();
  * session list and can be resumed later, rather than spawning an anonymous
  * PTY that never gets a persisted row.
  */
-export async function createSession(): Promise<{ session_id: string }> {
-  const { createSession: rpcCreate } = await import("./gateway");
-  return rpcCreate();
+export async function createSession(opts?: { source?: string; profile?: string | null }): Promise<{ session_id: string }> {
+  const client = getGatewayClient();
+  return client.request("session.create", {
+    close_on_disconnect: true,
+    source: opts?.source ?? "tool",
+    profile: opts?.profile ?? null,
+  });
 }

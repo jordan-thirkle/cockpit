@@ -494,8 +494,6 @@ function DocReader({ rel, onClose, byteSize }: DocReaderProps) {
   const [error, setError] = useState<string | null>(null);
   useEffect(() => {
     let alive = true;
-    setLoading(true);
-    setError(null);
     getDocFile(rel)
       .then((c) => {
         if (!alive) return;
@@ -570,8 +568,6 @@ export const DocsPage = () => {
   // fetch root docs tree on mount
   useEffect(() => {
     let alive = true;
-    setTreeLoading(true);
-    setTreeError(null);
     getDocsTree()
       .then((entries) => {
         if (!alive) return;

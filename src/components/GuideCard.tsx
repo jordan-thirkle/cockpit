@@ -1,4 +1,5 @@
 import { type ReactNode } from "react";
+import { useNavigate } from "react-router";
 
 // Accessible, themeable card used across the Control Center.
 // Every card explains WHAT it is + WHY, so it's understood by all skill levels.
@@ -11,6 +12,7 @@ export function GuideCard({
   children,
   onOpenChat,
   chatHint,
+  pageLink, // direct link to a page (preferred over "Open in chat")
 }: {
   icon: string;
   title: string;
@@ -20,7 +22,20 @@ export function GuideCard({
   children?: ReactNode; // live data / detail
   onOpenChat?: () => void;
   chatHint?: string; // what clicking "Open in chat" does
+  pageLink?: string; // direct navigation target (e.g., "/skills", "/mcp")
 }) {
+  const navigate = useNavigate();
+
+  const handleAction = () => {
+    if (pageLink) {
+      navigate(pageLink);
+    } else if (onOpenChat) {
+      onOpenChat();
+    }
+  };
+
+  const buttonLabel = pageLink ? "Open page" : "Open in chat";
+
   return (
     <section className="guide-card" aria-label={title}>
       <header className="guide-card-head">
@@ -37,9 +52,9 @@ export function GuideCard({
       <p className="guide-what">{what}</p>
       <p className="guide-why">{why}</p>
       {children && <div className="guide-body">{children}</div>}
-      {onOpenChat && (
-        <button className="btn-primary guide-chat" onClick={onOpenChat} title={chatHint}>
-          Open in chat
+      {(onOpenChat || pageLink) && (
+        <button className="btn-primary guide-chat" onClick={handleAction} title={chatHint || pageLink}>
+          {buttonLabel}
         </button>
       )}
     </section>

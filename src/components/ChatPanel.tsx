@@ -7,6 +7,7 @@ import {
   buildPtyWsUrl,
   generateChannelId,
   getSessionMessages,
+  getGatewayClient,
   type SessionInfo,
   type SessionMessage,
 } from "@/lib/hermesApi";
@@ -25,6 +26,48 @@ const WS_SERVER_ERROR = 1011;
 /** Codes where the drop is plausibly transient and a reconnect is worth offering. */
 function isTransientClose(code: number | null): boolean {
   return code === WS_ABNORMAL || code === WS_SERVER_ERROR || code === WS_GOING_AWAY;
+}
+
+type ConnectionState = "connecting" | "connected" | "reconnecting" | "disconnected";
+
+// Connection state indicator component (moved outside to avoid static component warning)
+function ConnectionIndicator({ state }: { state: ConnectionState }) {
+  const colors = {
+    connecting: "var(--warn)",
+    connected: "var(--ok)",
+    reconnecting: "var(--warn)",
+    disconnected: "var(--danger)",
+  };
+  const labels = {
+    connecting: "Connecting…",
+    connected: "Connected",
+    reconnecting: "Reconnecting…",
+    disconnected: "Disconnected",
+  };
+  return (
+    <span
+      className="connection-indicator"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        fontSize: 11,
+        color: colors[state],
+      }}
+      aria-live="polite"
+    >
+      <span
+        style={{
+          width: 8,
+          height: 8,
+          borderRadius: "50%",
+          background: colors[state],
+          flex: "0 0 auto",
+        }}
+      />
+      {labels[state]}
+    </span>
+  );
 }
 
 export function ChatPanel({
@@ -46,8 +89,10 @@ export function ChatPanel({
   const wrapRef = useRef<HTMLDivElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const termRef = useRef<Terminal | null>(null);
+  const gatewayClientRef = useRef<ReturnType<typeof getGatewayClient> | null>(null);
   const [tab, setTab] = useState<"terminal" | "trace">("terminal");
   const [showModelPicker, setShowModelPicker] = useState(false);
+  const [connectionState, setConnectionState] = useState<ConnectionState>("connecting");
 
   const isEnded = !!(session?.ended_at);
 
@@ -60,6 +105,20 @@ export function ChatPanel({
   const [closeCode, setCloseCode] = useState<number | null>(null);
   const [wsBanner, setWsBanner] = useState<string | null>(null);
   const [reconnectNonce, setReconnectNonce] = useState(0);
+
+  // Subscribe to gateway client events for connection state
+  useEffect(() => {
+    const client = getGatewayClient();
+    gatewayClientRef.current = client;
+    const unsubOpen = client.on("open", () => setConnectionState("connected"));
+    const unsubClose = client.on("close", () => setConnectionState("reconnecting"));
+    const unsubError = client.on("error", () => setConnectionState("disconnected"));
+    return () => {
+      unsubOpen();
+      unsubClose();
+      unsubError();
+    };
+  }, []);
 
   // Fetch stored messages for ended sessions (read-only history).
   useEffect(() => {
@@ -94,19 +153,19 @@ export function ChatPanel({
       fontSize: 13,
       cursorBlink: true,
       theme: {
-        background: "#1e1c19",
-        foreground: "#ece7dd",
-        cursor: "#be3718",
-        selectionBackground: "#34302a",
-        black: "#26231f",
-        red: "#be3718",
-        green: "#56a878",
-        yellow: "#c9a227",
-        blue: "#6b7d8c",
-        magenta: "#a06a8a",
-        cyan: "#7fa6a0",
-        white: "#a59c8e",
-        brightBlack: "#34302a",
+        background: "var(--surface)",
+        foreground: "var(--ink)",
+        cursor: "var(--signal)",
+        selectionBackground: "var(--line)",
+        black: "var(--surface-2)",
+        red: "var(--danger)",
+        green: "var(--ok)",
+        yellow: "var(--warn)",
+        blue: "var(--signal)",
+        magenta: "var(--signal)",
+        cyan: "var(--signal-soft, var(--signal))",
+        white: "var(--ink)",
+        brightBlack: "var(--muted)",
       },
     });
     termRef.current = term;
@@ -136,6 +195,7 @@ export function ChatPanel({
         wsRef.current = ws;
         ws.onopen = () => {
           setWsBanner(null);
+          setConnectionState("connected");
           term.focus();
           ws.send(`\x1b[RESIZE:${term.cols};${term.rows}]`);
           if (repo) {
@@ -160,6 +220,7 @@ export function ChatPanel({
         };
         ws.onclose = (e) => {
           setCloseCode(e.code);
+          setConnectionState("reconnecting");
           if (e.code === WS_NORMAL) {
             term.write(
               "\r\n\x1b[90m[connection closed — session ended]\x1b[0m\r\n",
@@ -172,10 +233,14 @@ export function ChatPanel({
             setWsBanner(`Connection closed (code ${e.code}).`);
           }
         };
+        ws.onerror = () => {
+          setConnectionState("disconnected");
+        };
         term.onData((d) => ws.send(d));
       })
       .catch((err) => {
         setWsBanner(`Connect failed: ${err}`);
+        setConnectionState("disconnected");
         term.write(`\r\n\x1b[91m[connect failed: ${err}]\x1b[0m\r\n`);
       });
 
@@ -190,13 +255,17 @@ export function ChatPanel({
       wsRef.current?.close();
       term.dispose();
       setCloseCode(null);
+      setConnectionState("disconnected");
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- repo is the
     // store's stable object; repo?.id is the real reconnection key. Adding the
     // object itself would tear down the PTY on unrelated store reloads.
   }, [isEnded, session?.id, sessionId, repo?.id, reconnectNonce]);
 
-  const doReconnect = () => setReconnectNonce((n) => n + 1);
+  const doReconnect = () => {
+    setConnectionState("reconnecting");
+    setReconnectNonce((n) => n + 1);
+  };
 
   const title = repo ? `${repo.owner}/${repo.name}` : session?.title ?? "New chat";
   const meta = repo
@@ -357,6 +426,7 @@ export function ChatPanel({
               </button>
             </>
           )}
+          <ConnectionIndicator state={connectionState} />
           {closeCode !== null && isTransientClose(closeCode) && (
             <button
               className="btn-ghost"

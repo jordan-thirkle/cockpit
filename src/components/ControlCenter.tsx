@@ -32,20 +32,6 @@ export function ControlCenter({ onClose }: { onClose?: () => void }) {
     getConfigSchema().then(setConfig).catch(() => setConfig(null));
   }, []);
 
-  // "Open in chat" opens a fresh Cockpit tab (a real Hermes session) and
-  // copies the guiding prompt to the clipboard so the user can paste it
-  // immediately. Cockpit has no /chat?prompt= route (that would be a
-  // Hermes-core change), so we don't pretend one exists — we seed the
-  // clipboard instead, which is honest and actually useful.
-  const openChat = (hint: string) => {
-    try {
-      void navigator.clipboard?.writeText(hint);
-    } catch {
-      /* clipboard may be blocked; the hint is also shown in the card */
-    }
-    window.open("/", "_blank");
-  };
-
   return (
     <div className="control-center">
       <div className="cc-head">
@@ -69,8 +55,7 @@ export function ControlCenter({ onClose }: { onClose?: () => void }) {
           live
           what={C.skills.what}
           why={C.skills.why}
-          chatHint="Browse and enable skills"
-          onOpenChat={() => openChat("Browse my installed Hermes skills and suggest which to enable for my work.")}
+          pageLink="/skills"
         >
           {skills === null ? (
             <span className="cc-loading">Loading skills…</span>
@@ -96,8 +81,7 @@ export function ControlCenter({ onClose }: { onClose?: () => void }) {
           live
           what={C.providers.what}
           why={C.providers.why}
-          chatHint="Show and configure providers"
-          onOpenChat={() => openChat("Show my configured Hermes providers and help me add one.")}
+          pageLink="/model-info"
         >
           {providers === null ? (
             <span className="cc-loading">Loading providers…</span>
@@ -122,13 +106,11 @@ export function ControlCenter({ onClose }: { onClose?: () => void }) {
           live
           what={C.config.what}
           why={C.config.why}
-          chatHint="Show and edit config"
-          onOpenChat={() => openChat("Show my Hermes config and explain the most useful settings.")}
+          pageLink="/config"
         >
           {config ? (
             <div className="cc-count">
-              <strong>{(config.category_order ?? Object.keys(config.fields)).length}</strong>{" "}
-              setting groups
+              <strong>{(config.category_order ?? Object.keys(config.fields)).length}</strong> setting groups
             </div>
           ) : (
             <span className="cc-loading">Loading…</span>
@@ -141,8 +123,7 @@ export function ControlCenter({ onClose }: { onClose?: () => void }) {
           title="Tools & Toolsets"
           what={C.tools.what}
           why={C.tools.why}
-          chatHint="Configure toolsets"
-          onOpenChat={() => openChat("Show my available Hermes toolsets and help me enable the right ones.")}
+          pageLink="/toolsets"
         />
 
         {/* GUIDED: MCP */}
@@ -151,8 +132,7 @@ export function ControlCenter({ onClose }: { onClose?: () => void }) {
           title="MCP Servers"
           what={C.mcp.what}
           why={C.mcp.why}
-          chatHint="Set up an MCP server"
-          onOpenChat={() => openChat("Help me add an MCP server to Hermes with a clear example.")}
+          pageLink="/mcp"
         />
 
         {/* GUIDED: Bots */}
@@ -162,7 +142,7 @@ export function ControlCenter({ onClose }: { onClose?: () => void }) {
           what={C.bots.what}
           why={C.bots.why}
           chatHint="Create a bot"
-          onOpenChat={() => openChat("Help me create a named Bot in Hermes for my main workflow.")}
+          pageLink="/toolsets"
         />
 
         {/* LIVE (memory panel exists) */}
@@ -172,9 +152,10 @@ export function ControlCenter({ onClose }: { onClose?: () => void }) {
           live
           what={C.memory.what}
           why={C.memory.why}
-          chatHint="View memory"
-          onOpenChat={() => openChat("Show my Hermes memory and how to improve it.")}
-        />
+          pageLink="/memory-providers"
+        >
+          <span className="cc-loading">Memory panel coming soon</span>
+        </GuideCard>
 
         {/* GUIDED: Cron */}
         <GuideCard
@@ -182,8 +163,7 @@ export function ControlCenter({ onClose }: { onClose?: () => void }) {
           title="Cron Jobs"
           what={C.cron.what}
           why={C.cron.why}
-          chatHint="Set up a scheduled task"
-          onOpenChat={() => openChat("Help me create a scheduled Cron job in Hermes.")}
+          pageLink="/cron"
         />
 
         {/* GUIDED: Gateway */}
@@ -192,8 +172,7 @@ export function ControlCenter({ onClose }: { onClose?: () => void }) {
           title="Gateway (Telegram & more)"
           what={C.gateway.what}
           why={C.gateway.why}
-          chatHint="Connect a gateway"
-          onOpenChat={() => openChat("Help me connect Hermes to Telegram via the gateway.")}
+          pageLink="/gateway"
         />
 
         {/* GUIDED: Connections */}
@@ -202,8 +181,7 @@ export function ControlCenter({ onClose }: { onClose?: () => void }) {
           title="Connections"
           what={C.connections.what}
           why={C.connections.why}
-          chatHint="Check connections"
-          onOpenChat={() => openChat("Check my Hermes connections and fix any that are broken.")}
+          pageLink="/status"
         />
       </div>
     </div>

@@ -407,6 +407,7 @@ export function App() {
       {newChat && !activeSession && !activeRepo && (
         <ChatPanel
           session={newChatSession ?? null}
+          sessionId={newChatSession?.id ?? null}
           onNewChat={handleNewChat}
           onClose={() => {
             setActiveSession(null);

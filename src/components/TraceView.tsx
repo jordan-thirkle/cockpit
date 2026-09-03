@@ -19,14 +19,25 @@ export function TraceView({ sessionId }: { sessionId: string }) {
   const [data, setData] = useState<SessionMessagesResponse | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [tab, setTab] = useState<Tab>("trace");
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let alive = true;
-    setData(null);
-    setErr(null);
     getSessionMessages(sessionId, "oldest", 500)
-      .then((d) => alive && setData(d))
-      .catch((e) => alive && setErr(String(e?.message ?? e)));
+      .then((d) => {
+        if (alive) {
+          setData(d);
+          setErr(null);
+          setLoading(false);
+        }
+      })
+      .catch((e) => {
+        if (alive) {
+          setErr(String(e?.message ?? e));
+          setData(null);
+          setLoading(false);
+        }
+      });
     return () => {
       alive = false;
     };
@@ -43,7 +54,8 @@ export function TraceView({ sessionId }: { sessionId: string }) {
   );
 
   if (err) return <div className="trace-empty">Could not load trace: {err}</div>;
-  if (!data) return <div className="trace-empty">Loading trace…</div>;
+  if (loading) return <div className="trace-empty">Loading trace…</div>;
+  if (!data) return <div className="trace-empty">No data</div>;
   if (messages.length === 0)
     return <div className="trace-empty">No messages in this session yet.</div>;
 
