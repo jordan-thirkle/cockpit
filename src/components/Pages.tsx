@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, type ReactNode } from "react";
 import { ApiPage, redactSecrets } from "./Page";
+import { showToast } from "./Toasts";
 import { SearchInput, EmptyState, CopyButton } from "./ui";
 import {
   getStatus,
@@ -935,42 +936,146 @@ export const AnalyticsModelsPage = () => (
   <ApiPage title="Analytics · Models" subtitle="Model breakdown" fetcher={() => getAnalyticsModels(30)} redact={redactSecrets} />
 );
 
-// Skills: richer — list names + let user inspect (raw JSON fallback for detail).
-export const SkillsPage = () => (
-  <ApiPage
-    title="Skills"
-    subtitle="Installed Hermes skills"
-    fetcher={getSkills}
-    render={(d: any) => {
-      const list = Array.isArray(d) ? d : d?.skills ?? d?.entries ?? [];
-      const items = Array.isArray(list) ? list : [];
-      return (
-        <div className="card-grid skills-grid">
-          {items.length === 0 && <div className="page-state">No skills returned.</div>}
-          {items.map((s: any, i: number) => (
-            <div className="info-card skill-card" key={s?.name ?? i}>
-              <div className="skill-card-header">
-                <span className="skill-icon">🧠</span>
-                <div className="skill-card-title-row">
-                  <div className="info-card-title skill-title">{s?.name ?? "(unnamed)"}</div>
-                  {s?.version && <span className="skill-version">{s.version}</span>}
+// Skills: richer — list names + let user copy JSON or open a detail view.
+export const SkillsPage = () => {
+  const [openSkill, setOpenSkill] = useState<any | null>(null);
+  return (
+    <ApiPage
+      title="Skills"
+      subtitle="Installed Hermes skills"
+      fetcher={getSkills}
+      render={(d: any) => {
+        const list = Array.isArray(d) ? d : d?.skills ?? d?.entries ?? [];
+        const items = Array.isArray(list) ? list : [];
+        const copyJson = async (s: any) => {
+          const text = JSON.stringify(s, null, 2);
+          let ok = false;
+          try {
+            await navigator.clipboard.writeText(text);
+            ok = true;
+          } catch {
+            // Fallback for non-secure contexts: select-and-copy via a temp textarea.
+            const ta = document.createElement("textarea");
+            ta.value = text;
+            ta.style.position = "fixed";
+            ta.style.opacity = "0";
+            document.body.appendChild(ta);
+            ta.select();
+            try { ok = document.execCommand("copy"); } catch { ok = false; }
+            document.body.removeChild(ta);
+          }
+          showToast(
+            ok
+              ? `Copied ${s?.name ?? "skill"} JSON to clipboard`
+              : `Could not copy ${s?.name ?? "skill"} JSON — clipboard blocked`,
+            ok ? "info" : "error",
+          );
+        };
+        return (
+          <>
+            <div className="card-grid skills-grid">
+              {items.length === 0 && <div className="page-state">No skills returned.</div>}
+              {items.map((s: any, i: number) => (
+                <div className="info-card skill-card" key={s?.name ?? i}>
+                  <div className="skill-card-header">
+                    <span className="skill-icon">🧠</span>
+                    <div className="skill-card-title-row">
+                      <div className="info-card-title skill-title">{s?.name ?? "(unnamed)"}</div>
+                      {s?.version && <span className="skill-version">{s.version}</span>}
+                    </div>
+                  </div>
+                  <div className="info-card-sub skill-description">
+                    {s?.description ?? s?.category ?? ""}
+                  </div>
+                  {s?.category && (
+                    <div className="skill-meta">
+                      <span className="skill-tag">{s.category}</span>
+                      {s?.author && <span className="skill-tag">by {s.author}</span>}
+                    </div>
+                  )}
+                  <div className="skill-actions">
+                    <button
+                      type="button"
+                      className="btn-ghost btn-sm"
+                      title="Copy this skill's JSON to the clipboard"
+                      onClick={() => copyJson(s)}
+                    >
+                      JSON
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-ghost btn-sm"
+                      title="Open the full skill detail view"
+                      onClick={() => setOpenSkill(s)}
+                    >
+                      Open
+                    </button>
+                  </div>
                 </div>
-              </div>
-              <div className="info-card-sub skill-description">
-                {s?.description ?? s?.category ?? ""}
-              </div>
-              {s?.category && (
-                <div className="skill-meta">
-                  <span className="skill-tag">{s.category}</span>
-                  {s?.author && <span className="skill-tag">by {s.author}</span>}
-                </div>
-              )}
-              <div className="skill-actions">
-                <button className="btn-ghost btn-sm" title="Copy JSON to clipboard">JSON</button>\n                <button className="btn-ghost btn-sm" title="Open skill page" onClick={() => window.location.href = `/skills/${s?.name}`}>Open</button>\n              </div>
+              ))}
             </div>
-          ))}
-        </div>
-      );
-    }}
-  />
-);
+            {openSkill && (
+              <div
+                className="skill-modal-backdrop"
+                onClick={() => setOpenSkill(null)}
+                role="dialog"
+                aria-modal="true"
+                aria-label={`Skill ${openSkill?.name ?? ""}`}
+              >
+                <div
+                  className="skill-modal"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="skill-modal-head">
+                    <div className="skill-modal-title">
+                      <span className="skill-icon">🧠</span>
+                      <span>{openSkill?.name ?? "(unnamed)"}</span>
+                      {openSkill?.version && (
+                        <span className="skill-version">{openSkill.version}</span>
+                      )}
+                    </div>
+                    <div className="skill-modal-actions">
+                      <CopyButton
+                        value={openSkill}
+                        label="Copy JSON"
+                        title="Copy this skill's JSON to the clipboard"
+                      />
+                      <button
+                        type="button"
+                        className="btn-ghost btn-sm"
+                        onClick={() => setOpenSkill(null)}
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                  <div className="skill-modal-body">
+                    {openSkill?.description && (
+                      <p className="skill-modal-desc">{openSkill.description}</p>
+                    )}
+                    <div className="skill-modal-meta">
+                      {openSkill?.category && (
+                        <span className="skill-tag">{openSkill.category}</span>
+                      )}
+                      {openSkill?.author && (
+                        <span className="skill-tag">by {openSkill.author}</span>
+                      )}
+                      {openSkill?.path && (
+                        <span className="skill-tag skill-tag-path">
+                          {openSkill.path}
+                        </span>
+                      )}
+                    </div>
+                    <pre className="skill-modal-json">
+                      {JSON.stringify(openSkill, null, 2)}
+                    </pre>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
+        );
+      }}
+    />
+  );
+};

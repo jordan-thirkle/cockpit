@@ -1261,6 +1261,95 @@ button.text-success { color: var(--muted); background-color: transparent; border
   letter-spacing: 0.5px;
 }
 .skill-actions { display: flex; gap: 8px; padding-top: 8px; border-top: 1px solid var(--line); }
+.skill-actions .btn-ghost { flex: 1; }
+
+/* Skill detail modal — opened by the "Open" button on each skill card. */
+.skill-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 24px;
+  backdrop-filter: blur(2px);
+}
+.skill-modal {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  width: min(720px, 100%);
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.skill-modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--line);
+  background: var(--chip);
+}
+.skill-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+  min-width: 0;
+}
+.skill-modal-title span:nth-child(2) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.skill-modal-actions { display: flex; gap: 8px; flex-shrink: 0; }
+.skill-modal-body {
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.skill-modal-desc {
+  margin: 0;
+  color: var(--text);
+  line-height: 1.5;
+}
+.skill-modal-meta { display: flex; gap: 6px; flex-wrap: wrap; }
+.skill-tag-path {
+  text-transform: none;
+  font-family: var(--mono);
+  letter-spacing: 0;
+}
+.skill-modal-json {
+  margin: 0;
+  padding: 14px;
+  background: var(--chip);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text);
+  overflow: auto;
+  max-height: 50vh;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+@media (max-width: 640px) {
+  .skill-modal-backdrop { padding: 12px; }
+  .skill-modal { max-height: 90vh; }
+  .skill-modal-head { padding: 12px 14px; }
+  .skill-modal-body { padding: 14px; }
+  .skill-modal-title { font-size: 14px; }
+}
 
 /* Model grid */
 .model-grid { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
